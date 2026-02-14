@@ -1,14 +1,13 @@
-# jobs/urls.py — replace entire file
-
 from django.urls import path
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import LogoutView
 from . import views
 
 urlpatterns = [
+    # Home + Auth
     path("", views.home, name="home"),
     path("register/seeker/", views.register_seeker, name="register_seeker"),
     path("register/recruiter/", views.register_recruiter, name="register_recruiter"),
-    path("login/", LoginView.as_view(template_name="jobs/login.html"), name="login"),
+    path("login/", views.CustomLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="home"), name="logout"),
 
     # Job search
@@ -20,6 +19,14 @@ urlpatterns = [
     path("recruiter/jobs/new/", views.job_create, name="job_create"),
     path("recruiter/jobs/<int:pk>/edit/", views.job_edit, name="job_edit"),
     path("recruiter/jobs/<int:pk>/delete/", views.job_delete, name="job_delete"),
+
+    # Job Seeker Profile
     path("profile/", views.seeker_profile, name="seeker_profile"),
     path("profile/edit/", views.seeker_profile_edit, name="seeker_profile_edit"),
+
+    # Admin (custom pages)
+    path("site-admin/users/", views.admin_user_list, name="admin_user_list"),
+    path("site-admin/users/<int:user_id>/", views.admin_user_update, name="admin_user_update"),
+    path("site-admin/jobs/", views.admin_job_list, name="admin_job_list"),
+    path("site-admin/jobs/<int:pk>/delete/", views.admin_job_delete, name="admin_job_delete"),
 ]

@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser, JobSeekerProfile, RecruiterProfile
+from .models import CustomUser, JobSeekerProfile, RecruiterProfile, JobPosting
 
 
 class JobSeekerRegistrationForm(UserCreationForm):
@@ -57,8 +57,20 @@ class JobPostingForm(forms.ModelForm):
             "salary_min", "salary_max", "visa_sponsorship",
         ]
         widgets = {
-            "description": forms.Textarea(attrs={"rows": 5}),
-            "skills": forms.TextInput(attrs={"placeholder": "Python, Django, SQL"}),
+            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Software Engineer Intern"}),
+            "company": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Google"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 5, "placeholder": "Describe the role, responsibilities, and requirements..."}),
+            "skills": forms.TextInput(attrs={"class": "form-control", "placeholder": "Python, Django, SQL"}),
+            "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Atlanta, GA"}),
+
+            "job_type": forms.Select(attrs={"class": "form-select"}),
+            "experience_level": forms.Select(attrs={"class": "form-select"}),
+
+            "salary_min": forms.NumberInput(attrs={"class": "form-control", "placeholder": "e.g. 60000"}),
+            "salary_max": forms.NumberInput(attrs={"class": "form-control", "placeholder": "e.g. 90000"}),
+
+            "visa_sponsorship": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+
             "latitude": forms.HiddenInput(),
             "longitude": forms.HiddenInput(),
         }

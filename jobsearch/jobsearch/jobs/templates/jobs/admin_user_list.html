@@ -1,0 +1,18 @@
+{% if messages %}
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+{% endif %}
+
+<h1>Admin: Users</h1>
+
+<ul>
+  {% for u in users %}
+    <li>
+      {{ u.username }} — staff={{ u.is_staff }} — active={{ u.is_active }}
+      | <a href="{% url 'admin_user_update' u.id %}">Edit</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<p><a href="{% url 'admin_job_list' %}">Go to Job Moderation</a></p>

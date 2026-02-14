@@ -1,0 +1,19 @@
+{% if messages %}
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+{% endif %}
+
+<h1>Admin: Job Posts</h1>
+
+<ul>
+  {% for j in jobs %}
+    <li>
+      {{ j.title }} — {{ j.company }}
+      | <a href="{% url 'job_detail' j.pk %}">View</a>
+      | <a href="{% url 'admin_job_delete' j.pk %}">Remove</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<p><a href="{% url 'admin_user_list' %}">Go to User Management</a></p>
