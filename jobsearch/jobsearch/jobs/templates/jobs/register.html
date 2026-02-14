@@ -1,0 +1,33 @@
+<!-- jobs/templates/jobs/register.html -->
+{% extends "jobs/base.html" %}
+{% block title %}Register as {{ role }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 500px;">
+  <h2 class="fw-bold mb-4">Register as {{ role }}</h2>
+
+  <form method="post" class="bg-white p-4 rounded-4 border shadow-sm">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="mb-3">
+      <label class="form-label fw-semibold">{{ field.label }}</label>
+      <input type="{{ field.field.widget.input_type|default:'text' }}"
+             name="{{ field.html_name }}"
+             value="{{ field.value|default:'' }}"
+             class="form-control {% if field.errors %}is-invalid{% endif %}"
+             {% if field.field.required %}required{% endif %}>
+      {% for error in field.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    <button class="btn btn-primary w-100" type="submit">Create Account</button>
+  </form>
+
+  <p class="text-center mt-3 text-secondary">
+    Already have an account? <a href="{% url 'login' %}">Sign in</a>
+  </p>
+</div>
+{% endblock %}

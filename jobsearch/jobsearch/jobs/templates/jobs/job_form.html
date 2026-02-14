@@ -1,0 +1,46 @@
+<!-- jobs/templates/jobs/job_form.html -->
+{% extends "jobs/base.html" %}
+{% block title %}{% if editing %}Edit Job{% else %}Post a Job{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 650px;">
+  <h2 class="fw-bold mb-4">{% if editing %}Edit Job{% else %}Post a Job{% endif %}</h2>
+
+  <form method="post" class="bg-white p-4 rounded-4 border shadow-sm">
+    {% csrf_token %}
+
+    {% for field in form %}
+      {% if not field.is_hidden %}
+      <div class="mb-3">
+        <label class="form-label fw-semibold">{{ field.label }}</label>
+
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div class="form-check">
+            <input type="checkbox" name="{{ field.html_name }}" class="form-check-input"
+                   {% if field.value %}checked{% endif %}>
+          </div>
+        {% elif field.field.widget.input_type == 'select' %}
+          {{ field }}
+        {% elif field.name == 'description' or field.name == 'skills' and field.field.widget.attrs.rows %}
+          <textarea name="{{ field.html_name }}" rows="{{ field.field.widget.attrs.rows|default:4 }}"
+                    class="form-control {% if field.errors %}is-invalid{% endif %}">{{ field.value|default:'' }}</textarea>
+        {% else %}
+          <input type="{{ field.field.widget.input_type|default:'text' }}"
+                 name="{{ field.html_name }}" value="{{ field.value|default:'' }}"
+                 class="form-control {% if field.errors %}is-invalid{% endif %}">
+        {% endif %}
+
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      </div>
+      {% else %}
+        {{ field }}
+      {% endif %}
+    {% endfor %}
+
+    <button class="btn btn-primary w-100" type="submit">
+      {% if editing %}Save Changes{% else %}Post Job{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

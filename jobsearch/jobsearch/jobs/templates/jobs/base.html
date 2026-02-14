@@ -31,9 +31,17 @@
     </a>
 
     <div class="ms-auto d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm">Recruiter</a>
-      <a class="btn btn-outline-secondary btn-sm">Job Seeker</a>
-      <a class="btn btn-primary btn-sm">Sign in</a>
+      {% if user.is_authenticated %}
+        <span class="navbar-text me-2">{{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-outline-secondary btn-sm" type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Sign in</a>
+      {% endif %}
     </div>
   </div>
 </nav>

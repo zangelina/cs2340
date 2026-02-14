@@ -42,16 +42,20 @@
       <div class="bg-white rounded-4 p-4 border shadow-sm">
         <h5 class="fw-semibold mb-3">Today’s opportunities</h5>
 
-        {% for _ in "123" %}
-        <div class="border rounded-4 p-3 mb-3 card-hover">
-          <div class="fw-semibold">Software Engineer Intern</div>
-          <div class="text-secondary">FinTech Labs • Atlanta / Remote</div>
-          <div class="mt-2">
-            <span class="badge rounded-pill text-bg-light">Python</span>
-            <span class="badge rounded-pill text-bg-light">Django</span>
-            <span class="badge rounded-pill text-bg-light">SQL</span>
+        {% for job in jobs %}
+        <a href="{% url 'job_detail' job.pk %}" class="text-decoration-none text-dark">
+          <div class="border rounded-4 p-3 mb-3 card-hover">
+            <div class="fw-semibold">{{ job.title }}</div>
+            <div class="text-secondary">{{ job.company }} · {{ job.location|default:"Remote" }}</div>
+            <div class="mt-2">
+              {% for skill in job.skills_list %}
+                <span class="badge rounded-pill text-bg-light">{{ skill }}</span>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+        </a>
+        {% empty %}
+          <p class="text-secondary">No jobs posted yet.</p>
         {% endfor %}
       </div>
     </div>

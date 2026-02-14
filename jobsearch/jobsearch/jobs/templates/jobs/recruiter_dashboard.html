@@ -1,0 +1,36 @@
+<!-- jobs/templates/jobs/recruiter_dashboard.html -->
+{% extends "jobs/base.html" %}
+{% block title %}Recruiter Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">My Job Postings</h2>
+    <a href="{% url 'job_create' %}" class="btn btn-primary">+ Post a Job</a>
+  </div>
+
+  {% if jobs %}
+    {% for job in jobs %}
+    <div class="bg-white rounded-4 p-4 border card-hover mb-3">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h5 class="fw-semibold mb-1">{{ job.title }}</h5>
+          <div class="text-secondary">{{ job.company }} · {{ job.location|default:"No location" }}</div>
+          <div class="mt-2">
+            {% for skill in job.skills_list %}
+              <span class="badge rounded-pill text-bg-light">{{ skill }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'job_edit' job.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+          <a href="{% url 'job_delete' job.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-secondary">No postings yet. Create your first one!</p>
+  {% endif %}
+</div>
+{% endblock %}

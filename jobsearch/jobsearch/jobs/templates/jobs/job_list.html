@@ -1,0 +1,79 @@
+<!-- jobs/templates/jobs/job_list.html -->
+{% extends "jobs/base.html" %}
+{% block title %}Search Jobs{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="fw-bold mb-4">Search Jobs</h2>
+
+  <form method="get" class="bg-white p-4 rounded-4 border shadow-sm mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Title, skill, or company">
+      </div>
+      <div class="col-md-3">
+        <input class="form-control" name="location" value="{{ location }}" placeholder="Location">
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" name="job_type">
+          <option value="">All types</option>
+          {% for val, label in job_type_choices %}
+            <option value="{{ val }}" {% if job_type == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" name="experience">
+          <option value="">All levels</option>
+          {% for val, label in experience_choices %}
+            <option value="{{ val }}" {% if experience == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-primary" type="submit">Go</button>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-md-3">
+        <input class="form-control" name="salary_min" value="{{ salary_min }}" placeholder="Min salary">
+      </div>
+      <div class="col-md-3">
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" name="visa" value="1" id="visa" {% if visa %}checked{% endif %}>
+          <label class="form-check-label" for="visa">Visa sponsorship</label>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {% if jobs %}
+    {% for job in jobs %}
+    <a href="{% url 'job_detail' job.pk %}" class="text-decoration-none text-dark">
+      <div class="bg-white rounded-4 p-4 border card-hover mb-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="fw-semibold mb-1">{{ job.title }}</h5>
+            <div class="text-secondary">{{ job.company }} · {{ job.location|default:"Location not specified" }}</div>
+          </div>
+          <div class="text-end text-secondary small">
+            {{ job.get_job_type_display }} · {{ job.salary_display }}
+          </div>
+        </div>
+        <div class="mt-2">
+          {% for skill in job.skills_list %}
+            <span class="badge rounded-pill text-bg-light">{{ skill }}</span>
+          {% endfor %}
+          {% if job.visa_sponsorship %}
+            <span class="badge rounded-pill text-bg-info">Visa</span>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <p class="text-secondary">No jobs found matching your criteria.</p>
+  {% endif %}
+</div>
+{% endblock %}

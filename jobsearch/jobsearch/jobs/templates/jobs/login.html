@@ -1,0 +1,35 @@
+<!-- jobs/templates/jobs/login.html -->
+{% extends "jobs/base.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 500px;">
+  <h2 class="fw-bold mb-4">Sign In</h2>
+
+  <form method="post" class="bg-white p-4 rounded-4 border shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Username</label>
+      <input type="text" name="username" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Password</label>
+      <input type="password" name="password" class="form-control" required>
+    </div>
+
+    {% if form.errors %}
+      <div class="alert alert-danger">Invalid username or password.</div>
+    {% endif %}
+
+    <button class="btn btn-primary w-100" type="submit">Sign In</button>
+  </form>
+
+  <p class="text-center mt-3 text-secondary">
+    New here?
+    <a href="{% url 'register_seeker' %}">Job Seeker</a> ·
+    <a href="{% url 'register_recruiter' %}">Recruiter</a>
+  </p>
+</div>
+{% endblock %}
