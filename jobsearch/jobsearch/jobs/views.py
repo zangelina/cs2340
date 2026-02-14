@@ -143,6 +143,11 @@ def job_delete(request, pk):
         return redirect("recruiter_dashboard")
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+# jobs/views.py — add these views
+>>>>>>> 718b341 (Admin changes)
 
 #ADMIN VIEWS
 
@@ -157,6 +162,31 @@ def admin_user_update(request, user_id):
     target = get_object_or_404(CustomUser, id=user_id)
 
     if request.method == "POST":
+<<<<<<< HEAD
+=======
+        form = JobSeekerProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect("seeker_profile")
+    else:
+        form = JobSeekerProfileForm(instance=profile)
+    return render(request, "jobs/seeker_profile_edit.html", {"form": form})
+=======
+
+#ADMIN VIEWS
+
+@admin_required
+def admin_user_list(request):
+    users = CustomUser.objects.all().order_by("username")
+    return render(request, "jobs/admin_user_list.html", {"users": users})
+
+
+@admin_required
+def admin_user_update(request, user_id):
+    target = get_object_or_404(CustomUser, id=user_id)
+
+    if request.method == "POST":
+>>>>>>> 718b341 (Admin changes)
         target.is_active = ("is_active" in request.POST)
 
         # Recruiters are NEVER allowed to become admin
@@ -190,3 +220,7 @@ def admin_job_delete(request, pk):
         return redirect("admin_job_list")
 
     return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})
+<<<<<<< HEAD
+=======
+>>>>>>> fbaa382 (Add admin pages and permissions)
+>>>>>>> 718b341 (Admin changes)

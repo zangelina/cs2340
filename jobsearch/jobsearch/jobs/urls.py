@@ -20,6 +20,13 @@ urlpatterns = [
     path("recruiter/jobs/new/", views.job_create, name="job_create"),
     path("recruiter/jobs/<int:pk>/edit/", views.job_edit, name="job_edit"),
     path("recruiter/jobs/<int:pk>/delete/", views.job_delete, name="job_delete"),
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    path("profile/", views.seeker_profile, name="seeker_profile"),
+    path("profile/edit/", views.seeker_profile_edit, name="seeker_profile_edit"),
+=======
+>>>>>>> 718b341 (Admin changes)
     
     #Admin
     path("site-admin/users/", views.admin_user_list, name="admin_user_list"),
@@ -28,4 +35,8 @@ urlpatterns = [
     path("site-admin/jobs/<int:pk>/delete/", views.admin_job_delete, name="admin_job_delete"),
 
 
+<<<<<<< HEAD
+=======
+>>>>>>> fbaa382 (Add admin pages and permissions)
+>>>>>>> 718b341 (Admin changes)
 ]
