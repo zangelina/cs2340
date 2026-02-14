@@ -1,0 +1,79 @@
+<!-- jobs/templates/jobs/seeker_profile.html -->
+{% extends "jobs/base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 700px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">My Profile</h2>
+    <a href="{% url 'seeker_profile_edit' %}" class="btn btn-primary btn-sm">Edit Profile</a>
+  </div>
+
+  <div class="bg-white rounded-4 p-4 border shadow-sm">
+
+    <div class="mb-4">
+      <h4 class="fw-bold mb-1">{{ user.username }}</h4>
+      {% if profile.headline %}
+        <p class="fs-5 text-secondary mb-0">{{ profile.headline }}</p>
+      {% else %}
+        <p class="text-secondary fst-italic">No headline set</p>
+      {% endif %}
+    </div>
+
+    {% if profile.location %}
+    <div class="mb-3">
+      <h6 class="fw-semibold text-secondary">Location</h6>
+      <p>{{ profile.location }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <h6 class="fw-semibold text-secondary">Skills</h6>
+      {% if profile.skills_list %}
+        {% for skill in profile.skills_list %}
+          <span class="badge rounded-pill text-bg-light me-1">{{ skill }}</span>
+        {% endfor %}
+      {% else %}
+        <p class="text-secondary fst-italic">No skills added yet</p>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <h6 class="fw-semibold text-secondary">Education</h6>
+      {% if profile.education %}
+        <p>{{ profile.education|linebreaks }}</p>
+      {% else %}
+        <p class="text-secondary fst-italic">Not specified</p>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <h6 class="fw-semibold text-secondary">Work Experience</h6>
+      {% if profile.work_experience %}
+        <p>{{ profile.work_experience|linebreaks }}</p>
+      {% else %}
+        <p class="text-secondary fst-italic">Not specified</p>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <h6 class="fw-semibold text-secondary">Links</h6>
+      {% if profile.links %}
+        <p>{{ profile.links|linebreaks }}</p>
+      {% else %}
+        <p class="text-secondary fst-italic">No links added</p>
+      {% endif %}
+    </div>
+
+    <div class="mb-0">
+      <h6 class="fw-semibold text-secondary">Privacy</h6>
+      {% if profile.is_public %}
+        <span class="badge text-bg-success">Public — Recruiters can find you</span>
+      {% else %}
+        <span class="badge text-bg-secondary">Private — Hidden from recruiters</span>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

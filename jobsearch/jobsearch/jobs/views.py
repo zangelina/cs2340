@@ -144,6 +144,7 @@ def job_delete(request, pk):
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 # jobs/views.py — add these views
@@ -164,12 +165,35 @@ def admin_user_update(request, user_id):
     if request.method == "POST":
 <<<<<<< HEAD
 =======
+=======
+# jobs/views.py — add these views
+
+from .models import CustomUser, JobPosting, JobSeekerProfile
+from .forms import JobSeekerRegistrationForm, RecruiterRegistrationForm, JobPostingForm, JobSeekerProfileForm
+
+
+@login_required
+def seeker_profile(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+    profile, created = JobSeekerProfile.objects.get_or_create(user=request.user)
+    return render(request, "jobs/seeker_profile.html", {"profile": profile})
+
+
+@login_required
+def seeker_profile_edit(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+    profile, created = JobSeekerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+>>>>>>> 6c7c4bf72434724bc57c6e6f4fbabb00819b8012
         form = JobSeekerProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
             return redirect("seeker_profile")
     else:
         form = JobSeekerProfileForm(instance=profile)
+<<<<<<< HEAD
     return render(request, "jobs/seeker_profile_edit.html", {"form": form})
 =======
 
@@ -224,3 +248,6 @@ def admin_job_delete(request, pk):
 =======
 >>>>>>> fbaa382 (Add admin pages and permissions)
 >>>>>>> 718b341 (Admin changes)
+=======
+    return render(request, "jobs/seeker_profile_edit.html", {"form": form})
+>>>>>>> 6c7c4bf72434724bc57c6e6f4fbabb00819b8012
