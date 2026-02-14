@@ -30,18 +30,46 @@
       JobSearch<span class="brand-dot"></span>
     </a>
 
-    <div class="ms-auto d-flex gap-2">
+    <div class="ms-auto d-flex align-items-center gap-2">
+
       {% if user.is_authenticated %}
+
+        <!-- Admin Button (ONLY visible to staff users) -->
+        {% if user.is_staff %}
+          <a class="btn btn-warning btn-sm"
+             href="{% url 'admin_user_list' %}">
+            Admin
+          </a>
+        {% endif %}
+
         <span class="navbar-text me-2">{{ user.username }}</span>
+
         <form method="post" action="{% url 'logout' %}" class="d-inline">
           {% csrf_token %}
-          <button class="btn btn-outline-secondary btn-sm" type="submit">Log out</button>
+          <button class="btn btn-outline-secondary btn-sm" type="submit">
+            Log out
+          </button>
         </form>
+
       {% else %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
-        <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Sign in</a>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'register_recruiter' %}">
+          Recruiter
+        </a>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'register_seeker' %}">
+          Job Seeker
+        </a>
+
+        <a class="btn btn-primary btn-sm"
+           href="{% url 'login' %}">
+          Sign in
+        </a>
+
       {% endif %}
+
     </div>
   </div>
 </nav>

@@ -1,0 +1,21 @@
+<h1>Edit User: {{ target_user.username }}</h1>
+
+<form method="post">
+  {% csrf_token %}
+
+  <label>
+    <input type="checkbox" name="is_active" {% if target_user.is_active %}checked{% endif %}>
+    Active
+  </label>
+  <br>
+
+  <label>
+    <input type="checkbox" name="is_staff" {% if target_user.is_staff %}checked{% endif %}>
+    Staff (Admin)
+  </label>
+
+  <br><br>
+  <button type="submit">Save</button>
+</form>
+
+<p><a href="{% url 'admin_user_list' %}">Back to Users</a></p>

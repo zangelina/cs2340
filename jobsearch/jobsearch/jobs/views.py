@@ -6,6 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .forms import JobSeekerRegistrationForm, RecruiterRegistrationForm, JobPostingForm
 from .models import CustomUser, JobPosting
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
+
+def is_admin_user(user):
+    # Option 1 (recommended): use Django's built-in staff flag
+    return user.is_authenticated and user.is_staff
+
+admin_required = user_passes_test(is_admin_user)
 
 
 def home(request):
@@ -134,3 +142,51 @@ def job_delete(request, pk):
         job.delete()
         return redirect("recruiter_dashboard")
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
+
+
+#ADMIN VIEWS
+
+@admin_required
+def admin_user_list(request):
+    users = CustomUser.objects.all().order_by("username")
+    return render(request, "jobs/admin_user_list.html", {"users": users})
+
+
+@admin_required
+def admin_user_update(request, user_id):
+    target = get_object_or_404(CustomUser, id=user_id)
+
+    if request.method == "POST":
+        target.is_active = ("is_active" in request.POST)
+
+        # Recruiters are NEVER allowed to become admin
+        if target.is_recruiter():
+            target.is_staff = False
+            messages.warning(request, "Recruiters cannot be granted admin rights.")
+        else:
+            target.is_staff = ("is_staff" in request.POST)
+
+        target.save()
+        messages.success(request, f"Updated user: {target.username}")
+        return redirect("admin_user_list")
+
+    return render(request, "jobs/admin_user_update.html", {"target_user": target})
+
+
+
+@admin_required
+def admin_job_list(request):
+    jobs = JobPosting.objects.all().order_by("-id")
+    return render(request, "jobs/admin_job_list.html", {"jobs": jobs})
+
+
+@admin_required
+def admin_job_delete(request, pk):
+    job = get_object_or_404(JobPosting, pk=pk)
+
+    if request.method == "POST":
+        job.delete()
+        messages.success(request, "Job post removed.")
+        return redirect("admin_job_list")
+
+    return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})

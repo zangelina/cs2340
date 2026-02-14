@@ -1,0 +1,13 @@
+<h1>Remove Job Post</h1>
+
+<p>
+  Are you sure you want to remove:
+  <b>{{ job.title }}</b> at <b>{{ job.company }}</b>?
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Yes, remove</button>
+</form>
+
+<p><a href="{% url 'admin_job_list' %}">Cancel</a></p>
