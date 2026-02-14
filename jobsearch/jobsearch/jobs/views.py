@@ -6,11 +6,23 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .forms import JobSeekerRegistrationForm, RecruiterRegistrationForm, JobPostingForm
 from .models import CustomUser, JobPosting
-
+from django.contrib.auth.views import LoginView
+from django.urls import reverse_lazy
 
 def home(request):
     jobs = JobPosting.objects.filter(is_active=True)[:6]
     return render(request, "jobs/home.html", {"jobs": jobs})
+
+class CustomLoginView(LoginView):
+    template_name = "jobs/login.html"
+
+    def get_success_url(self):
+        user = self.request.user
+        if user.is_recruiter():
+            return reverse_lazy("recruiter_dashboard")
+        elif user.is_job_seeker():
+            return reverse_lazy("home")
+        return reverse_lazy("home")
 
 
 # ── Auth ──────────────────────────────────────────────
@@ -116,6 +128,8 @@ def job_create(request):
 
 @login_required
 def job_edit(request, pk):
+    if not request.user.is_recruiter():
+        return redirect("home")
     job = get_object_or_404(JobPosting, pk=pk, recruiter=request.user)
     if request.method == "POST":
         form = JobPostingForm(request.POST, instance=job)
@@ -129,6 +143,8 @@ def job_edit(request, pk):
 
 @login_required
 def job_delete(request, pk):
+    if not request.user.is_recruiter():
+        return redirect("home")
     job = get_object_or_404(JobPosting, pk=pk, recruiter=request.user)
     if request.method == "POST":
         job.delete()
