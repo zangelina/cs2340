@@ -43,3 +43,22 @@ class RecruiterRegistrationForm(UserCreationForm):
                 company_website=self.cleaned_data.get("company_website", ""),
             )
         return user
+    
+
+from .models import CustomUser, JobSeekerProfile, RecruiterProfile, JobPosting
+
+
+class JobPostingForm(forms.ModelForm):
+    class Meta:
+        model = JobPosting
+        fields = [
+            "title", "company", "description", "skills", "location",
+            "latitude", "longitude", "job_type", "experience_level",
+            "salary_min", "salary_max", "visa_sponsorship",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 5}),
+            "skills": forms.TextInput(attrs={"placeholder": "Python, Django, SQL"}),
+            "latitude": forms.HiddenInput(),
+            "longitude": forms.HiddenInput(),
+        }
