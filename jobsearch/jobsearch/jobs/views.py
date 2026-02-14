@@ -134,3 +134,31 @@ def job_delete(request, pk):
         job.delete()
         return redirect("recruiter_dashboard")
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
+
+# jobs/views.py — add these views
+
+from .models import CustomUser, JobPosting, JobSeekerProfile
+from .forms import JobSeekerRegistrationForm, RecruiterRegistrationForm, JobPostingForm, JobSeekerProfileForm
+
+
+@login_required
+def seeker_profile(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+    profile, created = JobSeekerProfile.objects.get_or_create(user=request.user)
+    return render(request, "jobs/seeker_profile.html", {"profile": profile})
+
+
+@login_required
+def seeker_profile_edit(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+    profile, created = JobSeekerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = JobSeekerProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect("seeker_profile")
+    else:
+        form = JobSeekerProfileForm(instance=profile)
+    return render(request, "jobs/seeker_profile_edit.html", {"form": form})

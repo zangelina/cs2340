@@ -20,4 +20,6 @@ urlpatterns = [
     path("recruiter/jobs/new/", views.job_create, name="job_create"),
     path("recruiter/jobs/<int:pk>/edit/", views.job_edit, name="job_edit"),
     path("recruiter/jobs/<int:pk>/delete/", views.job_delete, name="job_delete"),
+    path("profile/", views.seeker_profile, name="seeker_profile"),
+    path("profile/edit/", views.seeker_profile_edit, name="seeker_profile_edit"),
 ]

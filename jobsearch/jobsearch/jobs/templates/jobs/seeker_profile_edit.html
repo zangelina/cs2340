@@ -1,0 +1,39 @@
+<!-- jobs/templates/jobs/seeker_profile_edit.html -->
+{% extends "jobs/base.html" %}
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 600px;">
+  <h2 class="fw-bold mb-4">Edit Profile</h2>
+
+  <form method="post" class="bg-white p-4 rounded-4 border shadow-sm">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="mb-3">
+      <label class="form-label fw-semibold">{{ field.label }}</label>
+
+      {% if field.name == "is_public" %}
+        <div class="form-check">
+          <input type="checkbox" name="{{ field.html_name }}" class="form-check-input"
+                 id="id_is_public" {% if field.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_is_public">
+            Make my profile visible to recruiters
+          </label>
+        </div>
+      {% else %}
+        {{ field }}
+      {% endif %}
+
+      {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+      {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Save Profile</button>
+      <a href="{% url 'seeker_profile' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

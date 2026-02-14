@@ -62,3 +62,19 @@ class JobPostingForm(forms.ModelForm):
             "latitude": forms.HiddenInput(),
             "longitude": forms.HiddenInput(),
         }
+
+class JobSeekerProfileForm(forms.ModelForm):
+    class Meta:
+        model = JobSeekerProfile
+        fields = [
+            "headline", "skills", "education", "work_experience",
+            "links", "location", "is_public",
+        ]
+        widgets = {
+            "headline": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Aspiring Software Engineer"}),
+            "skills": forms.TextInput(attrs={"class": "form-control", "placeholder": "Python, Django, SQL, etc."}),
+            "education": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "BS Computer Science, Georgia Tech, 2025"}),
+            "work_experience": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": "Software Intern at Google, Summer 2024..."}),
+            "links": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "GitHub, LinkedIn, portfolio URLs"}),
+            "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "Atlanta, GA"}),
+        }
