@@ -30,19 +30,32 @@
       JobSearch<span class="brand-dot"></span>
     </a>
 
-    <div class="ms-auto d-flex gap-2">
-      {% if user.is_authenticated %}
-        <span class="navbar-text me-2">{{ user.username }}</span>
-        <form method="post" action="{% url 'logout' %}" class="d-inline">
-          {% csrf_token %}
-          <button class="btn btn-outline-secondary btn-sm" type="submit">Log out</button>
-        </form>
-      {% else %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
-        <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Sign in</a>
-      {% endif %}
-    </div>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+      <div class="container py-2">
+        <a class="navbar-brand fw-bold" href="/">
+          JobSearch<span class="brand-dot"></span>
+        </a>
+    
+        <div class="ms-auto d-flex gap-2">
+          {% if user.is_authenticated %}
+            {% if user.is_recruiter %}
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'recruiter_dashboard' %}">Dashboard</a>
+              <span class="navbar-text me-2">{{ user.username }}</span>
+            {% elif user.is_job_seeker %}
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'seeker_profile' %}">{{ user.username }}</a>
+            {% endif %}
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-outline-secondary btn-sm" type="submit">Log out</button>
+            </form>
+          {% else %}
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Sign in</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
   </div>
 </nav>
 
