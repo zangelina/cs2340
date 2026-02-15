@@ -1,0 +1,36 @@
+{% extends "jobs/base.html" %}
+{% block title %}Job Map{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="fw-bold mb-4">Job Locations</h2>
+
+  <div id="map" style="height: 500px;"></div>
+</div>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  var map = L.map('map').setView([33.7756, -84.3963], 11); // Atlanta default
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  {% for job in jobs %}
+    L.marker([{{ job.latitude }}, {{ job.longitude }}])
+      .addTo(map)
+      .bindPopup(`
+        <b>{{ job.title }}</b><br>
+        {{ job.company }}<br>
+        <a href="{% url 'job_detail' job.pk %}">View Job</a>
+      `);
+  {% endfor %}
+</script>
+
+{% endblock %}
