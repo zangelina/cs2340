@@ -71,6 +71,14 @@ def register_recruiter(request):
         form = RecruiterRegistrationForm()
     return render(request, "jobs/register.html", {"form": form, "role": "Recruiter"})
 
+def job_map(request):
+    jobs = JobPosting.objects.filter(
+        is_active=True,
+        latitude__isnull=False,
+        longitude__isnull=False
+    )
+
+    return render(request, "jobs/job_map.html", {"jobs": jobs})
 
 # ── Job Search ────────────────────────────────────────
 
