@@ -3,34 +3,171 @@
 
 {% block content %}
 <div class="container py-5">
-  <h2 class="fw-bold mb-4">Job Locations</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Job Locations</h2>
+    <div class="d-flex align-items-center gap-3">
+      <label class="fw-semibold text-secondary mb-0">Distance:</label>
+      <select id="radius-select" class="form-select form-select-sm" style="width: auto;">
+        <option value="0">All jobs</option>
+        <option value="5">5 miles</option>
+        <option value="10" selected>10 miles</option>
+        <option value="25">25 miles</option>
+        <option value="50">50 miles</option>
+        <option value="100">100 miles</option>
+      </select>
+      <button id="locate-btn" class="btn btn-primary btn-sm">Use my location</button>
+    </div>
+  </div>
 
-  <div id="map" style="height: 500px;"></div>
+  <div id="map" style="height: 550px; border-radius: 12px;"></div>
+  <div id="status" class="text-secondary small mt-2"></div>
 </div>
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  var map = L.map('map').setView([33.7756, -84.3963], 11); // Atlanta default
+  const map = L.map('map').setView([33.7756, -84.3963], 11);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  {% for job in jobs %}
-    L.marker([{{ job.latitude }}, {{ job.longitude }}])
-      .addTo(map)
-      .bindPopup(`
-        <b>{{ job.title }}</b><br>
-        {{ job.company }}<br>
-        <a href="{% url 'job_detail' job.pk %}">View Job</a>
-      `);
-  {% endfor %}
-</script>
+  // All jobs with coordinates
+  const allJobs = [
+    {% for job in jobs %}
+    {
+      lat: {{ job.latitude }},
+      lng: {{ job.longitude }},
+      title: "{{ job.title|escapejs }}",
+      company: "{{ job.company|escapejs }}",
+      url: "{% url 'job_detail' job.pk %}",
+      skills: "{{ job.skills|escapejs }}"
+    },
+    {% endfor %}
+  ];
 
+  let markers = [];
+  let userMarker = null;
+  let radiusCircle = null;
+  let userLat = null;
+  let userLng = null;
+
+  function milesToMeters(miles) {
+    return miles * 1609.34;
+  }
+
+  function distanceBetween(lat1, lng1, lat2, lng2) {
+    // Haversine formula, returns miles
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function showJobs(jobs) {
+    // Clear existing markers
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    jobs.forEach(job => {
+      const marker = L.marker([job.lat, job.lng]).addTo(map);
+      marker.bindPopup(`
+        <b>${job.title}</b><br>
+        ${job.company}<br>
+        ${job.distance ? '<span style="color:#666;">' + job.distance.toFixed(1) + ' mi away</span><br>' : ''}
+        <a href="${job.url}">View Job</a>
+      `);
+      markers.push(marker);
+    });
+
+    document.getElementById('status').textContent =
+      `Showing ${jobs.length} of ${allJobs.length} jobs`;
+  }
+
+  function filterByDistance() {
+    const radius = parseFloat(document.getElementById('radius-select').value);
+
+    // Remove old circle
+    if (radiusCircle) {
+      map.removeLayer(radiusCircle);
+      radiusCircle = null;
+    }
+
+    if (!userLat || !userLng || radius === 0) {
+      showJobs(allJobs);
+      return;
+    }
+
+    // Draw radius circle
+    radiusCircle = L.circle([userLat, userLng], {
+      radius: milesToMeters(radius),
+      color: '#0a66c2',
+      fillColor: '#0a66c2',
+      fillOpacity: 0.08,
+      weight: 2
+    }).addTo(map);
+
+    // Filter jobs
+    const filtered = allJobs
+      .map(job => ({
+        ...job,
+        distance: distanceBetween(userLat, userLng, job.lat, job.lng)
+      }))
+      .filter(job => job.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    showJobs(filtered);
+
+    // Fit map to circle bounds
+    map.fitBounds(radiusCircle.getBounds());
+  }
+
+  // Locate user
+  document.getElementById('locate-btn').addEventListener('click', function() {
+    if (!navigator.geolocation) {
+      document.getElementById('status').textContent = 'Geolocation not supported by your browser.';
+      return;
+    }
+
+    document.getElementById('status').textContent = 'Getting your location...';
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+
+        // Add/move user marker
+        if (userMarker) {
+          userMarker.setLatLng([userLat, userLng]);
+        } else {
+          userMarker = L.marker([userLat, userLng], {
+            icon: L.divIcon({
+              html: '<div style="background:#0a66c2;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>',
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+              className: ''
+            })
+          }).addTo(map).bindPopup('You are here');
+        }
+
+        filterByDistance();
+        document.getElementById('locate-btn').textContent = 'Update location';
+      },
+      function(err) {
+        document.getElementById('status').textContent = 'Could not get location: ' + err.message;
+      }
+    );
+  });
+
+  // Re-filter when radius changes
+  document.getElementById('radius-select').addEventListener('change', filterByDistance);
+
+  // Initial load: show all jobs
+  showJobs(allJobs);
+</script>
 {% endblock %}
