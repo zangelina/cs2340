@@ -36,10 +36,10 @@
       {% if user.is_authenticated %}
 
         {% if user.is_staff %}
-          <a class="btn btn-warning btn-sm" href="{% url 'admin_user_list' %}">
-            Admin
-          </a>
+          <a class="btn btn-warning btn-sm" href="{% url 'admin_user_list' %}">Admin</a>
         {% endif %}
+
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'job_map' %}">Map</a>
 
         {% if user.is_recruiter %}
           <a class="btn btn-outline-secondary btn-sm" href="{% url 'recruiter_dashboard' %}">
