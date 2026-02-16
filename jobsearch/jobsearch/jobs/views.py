@@ -261,3 +261,32 @@ def admin_job_delete(request, pk):
         return redirect("admin_job_list")
 
     return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})
+
+# ── Recommend jobs ───────────────────────────────────────
+
+def normalize_skills(text):
+    if not text:
+        return set()
+    return {s.strip().lower() for s in text.split(",") if s.strip()}
+
+@login_required
+def recommended_jobs(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+
+    profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
+    skills_list = [s.strip() for s in (profile.skills or "").split(",") if s.strip()]
+
+    jobs = JobPosting.objects.filter(is_active=True)
+    recommended = []
+
+    if skills_list:
+        for job in jobs:
+            text = f"{job.title} {job.description} {getattr(job, 'skills', '')} {job.company}".lower()
+            if any(skill.lower() in text for skill in skills_list):
+                recommended.append(job)
+
+    return render(request, "jobs/recommended_jobs.html", {
+        "jobs": recommended,
+        "skills_list": skills_list,
+    })
