@@ -274,7 +274,7 @@ def recommended_jobs(request):
     if not request.user.is_job_seeker():
         return redirect("home")
 
-    profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
+    profile, _ = JobSeekerProfile.objects.get_or_create(user = request.user)
     skills_list = [s.strip() for s in (profile.skills or "").split(",") if s.strip()]
 
     jobs = JobPosting.objects.filter(is_active=True)
@@ -290,3 +290,4 @@ def recommended_jobs(request):
         "jobs": recommended,
         "skills_list": skills_list,
     })
+
