@@ -12,6 +12,7 @@ urlpatterns = [
 
     # Job search
     path("jobs/", views.job_list, name="job_list"),
+    path("jobs/recommended/", views.recommended_jobs, name="recommended_jobs"),
     path("jobs/<int:pk>/", views.job_detail, name="job_detail"),
 
     # Recruiter
