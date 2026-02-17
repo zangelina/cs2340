@@ -1,0 +1,19 @@
+{% extends "jobs/base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 720px;">
+<h3 class="mb-2">Apply to: {{ job.title }}</h3>
+<p class="text-muted">{{ job.company }}{% if job.location %} • {{ job.location }}{% endif %}</p>
+
+<form method="post" class="card p-3">
+    {% csrf_token %}
+    <div class="mb-3">
+    <label class="form-label">Tailored note (optional)</label>
+    {{ form.note }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Application</button>
+    <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+</form>
+</div>
+{% endblock %}

@@ -11,8 +11,9 @@ from .forms import (
     RecruiterRegistrationForm,
     JobPostingForm,
     JobSeekerProfileForm,
+    ApplicationForm,
 )
-from .models import CustomUser, JobPosting, JobSeekerProfile
+from .models import CustomUser, JobPosting, JobSeekerProfile, Application
 
 
 # ── Admin guard ────────────────────────────────────────
@@ -71,14 +72,15 @@ def register_recruiter(request):
         form = RecruiterRegistrationForm()
     return render(request, "jobs/register.html", {"form": form, "role": "Recruiter"})
 
+
 def job_map(request):
     jobs = JobPosting.objects.filter(
         is_active=True,
         latitude__isnull=False,
         longitude__isnull=False
     )
-
     return render(request, "jobs/job_map.html", {"jobs": jobs})
+
 
 # ── Job Search ────────────────────────────────────────
 
@@ -127,6 +129,36 @@ def job_list(request):
 def job_detail(request, pk):
     job = get_object_or_404(JobPosting, pk=pk)
     return render(request, "jobs/job_detail.html", {"job": job})
+
+
+# ── Apply to job ───────────────────────────────────────
+
+@login_required
+def apply_to_job(request, pk):
+    # Only job seekers can apply
+    if not request.user.is_job_seeker():
+        return redirect("home")
+
+    job = get_object_or_404(JobPosting, pk=pk)
+
+    # Prevent duplicate applications
+    if Application.objects.filter(job=job, applicant=request.user).exists():
+        messages.info(request, "You already applied to this job.")
+        return redirect("job_detail", pk=pk)
+
+    if request.method == "POST":
+        form = ApplicationForm(request.POST)
+        if form.is_valid():
+            app = form.save(commit=False)
+            app.job = job
+            app.applicant = request.user
+            app.save()
+            messages.success(request, "Application submitted!")
+            return redirect("job_detail", pk=pk)
+    else:
+        form = ApplicationForm()
+
+    return render(request, "jobs/apply.html", {"job": job, "form": form})
 
 
 # ── Recruiter CRUD ────────────────────────────────────
@@ -262,6 +294,7 @@ def admin_job_delete(request, pk):
 
     return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})
 
+
 # ── Recommend jobs ───────────────────────────────────────
 
 def normalize_skills(text):
@@ -269,12 +302,13 @@ def normalize_skills(text):
         return set()
     return {s.strip().lower() for s in text.split(",") if s.strip()}
 
+
 @login_required
 def recommended_jobs(request):
     if not request.user.is_job_seeker():
         return redirect("home")
 
-    profile, _ = JobSeekerProfile.objects.get_or_create(user = request.user)
+    profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
     skills_list = [s.strip() for s in (profile.skills or "").split(",") if s.strip()]
 
     jobs = JobPosting.objects.filter(is_active=True)
@@ -290,4 +324,3 @@ def recommended_jobs(request):
         "jobs": recommended,
         "skills_list": skills_list,
     })
-

@@ -30,6 +30,7 @@ urlpatterns = [
     path("site-admin/users/<int:user_id>/", views.admin_user_update, name="admin_user_update"),
     path("site-admin/jobs/", views.admin_job_list, name="admin_job_list"),
     path("site-admin/jobs/<int:pk>/delete/", views.admin_job_delete, name="admin_job_delete"),
+    path("jobs/<int:pk>/apply/", views.apply_to_job, name="apply_to_job"),
 
     # Map
     # First one is for User Story 7

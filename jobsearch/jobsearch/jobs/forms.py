@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser, JobSeekerProfile, RecruiterProfile, JobPosting
+from .models import CustomUser, JobSeekerProfile, RecruiterProfile, JobPosting, Application
 
 
 class JobSeekerRegistrationForm(UserCreationForm):
@@ -43,9 +43,6 @@ class RecruiterRegistrationForm(UserCreationForm):
                 company_website=self.cleaned_data.get("company_website", ""),
             )
         return user
-    
-
-from .models import CustomUser, JobSeekerProfile, RecruiterProfile, JobPosting
 
 
 class JobPostingForm(forms.ModelForm):
@@ -57,23 +54,44 @@ class JobPostingForm(forms.ModelForm):
             "salary_min", "salary_max", "visa_sponsorship",
         ]
         widgets = {
-            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Software Engineer Intern"}),
-            "company": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Google"}),
-            "description": forms.Textarea(attrs={"class": "form-control", "rows": 5, "placeholder": "Describe the role, responsibilities, and requirements..."}),
-            "skills": forms.TextInput(attrs={"class": "form-control", "placeholder": "Python, Django, SQL"}),
-            "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Atlanta, GA"}),
-
+            "title": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Software Engineer Intern"
+            }),
+            "company": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Google"
+            }),
+            "description": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 5,
+                "placeholder": "Describe the role, responsibilities, and requirements..."
+            }),
+            "skills": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Python, Django, SQL"
+            }),
+            "location": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Atlanta, GA"
+            }),
             "job_type": forms.Select(attrs={"class": "form-select"}),
             "experience_level": forms.Select(attrs={"class": "form-select"}),
-
-            "salary_min": forms.NumberInput(attrs={"class": "form-control", "placeholder": "e.g. 60000"}),
-            "salary_max": forms.NumberInput(attrs={"class": "form-control", "placeholder": "e.g. 90000"}),
-
-            "visa_sponsorship": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-
+            "salary_min": forms.NumberInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. 60000"
+            }),
+            "salary_max": forms.NumberInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. 90000"
+            }),
+            "visa_sponsorship": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
             "latitude": forms.HiddenInput(),
             "longitude": forms.HiddenInput(),
         }
+
 
 class JobSeekerProfileForm(forms.ModelForm):
     class Meta:
@@ -83,10 +101,44 @@ class JobSeekerProfileForm(forms.ModelForm):
             "links", "location", "is_public",
         ]
         widgets = {
-            "headline": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Aspiring Software Engineer"}),
-            "skills": forms.TextInput(attrs={"class": "form-control", "placeholder": "Python, Django, SQL, etc."}),
-            "education": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "BS Computer Science, Georgia Tech, 2025"}),
-            "work_experience": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": "Software Intern at Google, Summer 2024..."}),
-            "links": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "GitHub, LinkedIn, portfolio URLs"}),
-            "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "Atlanta, GA"}),
+            "headline": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Aspiring Software Engineer"
+            }),
+            "skills": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Python, Django, SQL, etc."
+            }),
+            "education": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 3,
+                "placeholder": "BS Computer Science, Georgia Tech, 2025"
+            }),
+            "work_experience": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4,
+                "placeholder": "Software Intern at Google, Summer 2024..."
+            }),
+            "links": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 2,
+                "placeholder": "GitHub, LinkedIn, portfolio URLs"
+            }),
+            "location": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Atlanta, GA"
+            }),
+        }
+
+
+class ApplicationForm(forms.ModelForm):
+    class Meta:
+        model = Application
+        fields = ["note"]
+        widgets = {
+            "note": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4,
+                "placeholder": "Write a tailored note (optional)",
+            })
         }

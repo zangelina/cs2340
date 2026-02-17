@@ -1,6 +1,7 @@
 from django.db import models
 
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 ## for custom users
 class CustomUser(AbstractUser):
@@ -117,3 +118,17 @@ class JobPosting(models.Model):
     def __str__(self):
         return f"{self.title} at {self.company}"
     
+class Application(models.Model):
+    job = models.ForeignKey('JobPosting', on_delete=models.CASCADE, related_name="applications")
+    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications")
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Meta:
+    constraints = [
+        models.UniqueConstraint(fields=["job", "applicant"], name="unique_application_per_job")
+    ]
+
+
+    def __str__(self):
+        return f"{self.applicant.username} -> {self.job.title}"
