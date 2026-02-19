@@ -29,6 +29,12 @@
     <h5 class="fw-semibold">Description</h5>
     <p>{{ job.description|linebreaks }}</p>
 
+    {% if user.is_authenticated and user.is_job_seeker %}
+    <a href="{% url 'apply_to_job' job.pk %}" class="btn btn-primary mt-3">
+        Apply
+    </a>
+{% endif %}
+
     <p class="text-secondary small">Posted {{ job.created_at|timesince }} ago</p>
 
     {% if user.is_authenticated and user.is_job_seeker %}
