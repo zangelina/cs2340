@@ -6,19 +6,166 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 
   <style>
-    body { background-color: #f5f7fb; }
-    .brand-dot {
-      width:10px;height:10px;border-radius:50%;
-      display:inline-block;background:#0a66c2;margin-left:6px;
+    :root {
+      --brand: #1a56db;
+      --brand-light: #e8effc;
+      --brand-dark: #0f3a94;
+      --surface: #f8f9fc;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --info: #0891b2;
+      --radius: 14px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,.08);
     }
-    .card-hover {
+
+    * { font-family: 'DM Sans', -apple-system, sans-serif; }
+
+    body {
+      background: var(--surface);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ─────────────────── */
+    .js-nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .js-brand {
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--text) !important;
+      text-decoration: none;
+      letter-spacing: -.3px;
+    }
+    .js-brand-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--brand);
+      margin-left: 4px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    /* ── Buttons ────────────────── */
+    .btn-brand {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 8px 18px;
+      transition: all .15s ease;
+    }
+    .btn-brand:hover {
+      background: var(--brand-dark);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 500;
+      padding: 8px 16px;
+      transition: all .15s ease;
+    }
+    .btn-ghost:hover {
+      background: var(--surface);
+      border-color: #d1d5db;
+    }
+
+    /* ── Cards ──────────────────── */
+    .js-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
       transition: transform .15s ease, box-shadow .15s ease;
     }
-    .card-hover:hover {
+    .js-card-hover:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* ── Badges ─────────────────── */
+    .js-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+    .js-badge-skill {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .js-badge-brand { background: var(--brand-light); color: var(--brand); }
+    .js-badge-success { background: #ecfdf5; color: var(--success); }
+    .js-badge-warning { background: #fffbeb; color: var(--warning); }
+    .js-badge-info { background: #ecfeff; color: var(--info); }
+    .js-badge-danger { background: #fef2f2; color: var(--danger); }
+    .js-badge-muted { background: var(--surface); color: var(--text-muted); }
+
+    /* ── Status pipeline ───────── */
+    .status-applied { background: #dbeafe; color: #1e40af; }
+    .status-review { background: #fef3c7; color: #92400e; }
+    .status-interview { background: #ede9fe; color: #5b21b6; }
+    .status-offer { background: #d1fae5; color: #065f46; }
+    .status-closed { background: #f3f4f6; color: #6b7280; }
+
+    /* ── Form controls ─────────── */
+    .form-control:focus, .form-select:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+
+    /* ── Toast messages ────────── */
+    .js-toast {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 999;
+      min-width: 280px;
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── Misc ──────────────────── */
+    .text-muted { color: var(--text-muted) !important; }
+    a { color: var(--brand); }
+    a:hover { color: var(--brand-dark); }
+
+    .section-label {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .5rem;
     }
   </style>
 
@@ -26,44 +173,52 @@
 </head>
 
 <body>
-<nav class="navbar navbar-expand-lg bg-white border-bottom">
-  <div class="container py-2">
-    <a class="navbar-brand fw-bold" href="{% url 'home' %}">
-      JobSearch<span class="brand-dot"></span>
+
+<!-- Toast messages -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="js-toast alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<nav class="js-nav">
+  <div class="container d-flex align-items-center py-3">
+    <a class="js-brand" href="{% url 'home' %}">
+      JobSearch<span class="js-brand-dot"></span>
     </a>
 
     <div class="ms-auto d-flex align-items-center gap-2">
       {% if user.is_authenticated %}
 
         {% if user.is_staff %}
-          <a class="btn btn-warning btn-sm" href="{% url 'admin_user_list' %}">Admin</a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'admin_user_list' %}" style="border-color:var(--warning);color:var(--warning);">Admin</a>
         {% endif %}
 
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'job_map' %}">Map</a>
+        <a class="btn btn-ghost btn-sm" href="{% url 'job_map' %}">Map</a>
 
         {% if user.is_recruiter %}
-          <a class="btn btn-outline-secondary btn-sm" href="{% url 'recruiter_dashboard' %}">
-            Dashboard
-          </a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'recruiter_dashboard' %}">Dashboard</a>
         {% endif %}
 
         {% if user.is_job_seeker %}
-          <a class="btn btn-outline-secondary btn-sm" href="{% url 'seeker_profile' %}">
-            Profile
-          </a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'my_applications' %}">Applications</a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'seeker_profile' %}">Profile</a>
         {% endif %}
 
-        <span class="navbar-text ms-1">{{ user.username }}</span>
+        <span class="text-muted small ms-1">{{ user.username }}</span>
 
-        <form method="post" action="{% url 'logout' %}" class="d-inline ms-2">
+        <form method="post" action="{% url 'logout' %}" class="d-inline ms-1">
           {% csrf_token %}
-          <button class="btn btn-outline-secondary btn-sm" type="submit">Log out</button>
+          <button class="btn btn-ghost btn-sm" type="submit" style="color:var(--danger);border-color:#fecaca;">Log out</button>
         </form>
 
       {% else %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
-        <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Sign in</a>
+        <a class="btn btn-ghost btn-sm" href="{% url 'register_recruiter' %}">Recruiter</a>
+        <a class="btn btn-ghost btn-sm" href="{% url 'register_seeker' %}">Job Seeker</a>
+        <a class="btn btn-brand btn-sm" href="{% url 'login' %}">Sign in</a>
       {% endif %}
     </div>
   </div>
@@ -71,5 +226,6 @@
 
 {% block content %}{% endblock %}
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

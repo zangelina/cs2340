@@ -1,0 +1,61 @@
+{% extends "jobs/base.html" %}
+{% block title %}Applicants — {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 900px;">
+  <a href="{% url 'recruiter_dashboard' %}" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1 mb-3">
+    ← Dashboard
+  </a>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Applicants</h2>
+      <p class="text-muted mb-0">{{ job.title }} at {{ job.company }}</p>
+    </div>
+    <span class="js-badge js-badge-brand" style="font-size:.9rem;padding:8px 14px;">
+      {{ applications|length }} applicant{{ applications|length|pluralize }}
+    </span>
+  </div>
+
+  {% if applications %}
+    {% for app in applications %}
+    <div class="js-card mb-2">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <a href="{% url 'view_candidate' app.applicant.pk %}" class="text-decoration-none fw-bold">
+            {{ app.applicant.username }}
+          </a>
+          <div class="text-muted small">Applied {{ app.created_at|date:"M j, Y" }}</div>
+          {% if app.note %}
+            <div class="text-muted small mt-1 fst-italic">"{{ app.note|truncatewords:20 }}"</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="js-badge status-{{ app.status }}">{{ app.get_status_display }}</span>
+
+          <form method="post" action="{% url 'update_application_status' app.pk %}" class="d-inline">
+            {% csrf_token %}
+            <select name="status" class="form-select form-select-sm" style="width:auto;border-radius:8px;"
+                    onchange="this.form.submit()">
+              <option value="">Move to…</option>
+              <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
+              <option value="review" {% if app.status == "review" %}selected{% endif %}>In Review</option>
+              <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
+              <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
+              <option value="closed" {% if app.status == "closed" %}selected{% endif %}>Closed</option>
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="js-card text-center py-5">
+      <div style="font-size:2.5rem;margin-bottom:.5rem;">📋</div>
+      <h5 class="fw-bold">No applicants yet</h5>
+      <p class="text-muted">Applicants will appear here when they apply.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

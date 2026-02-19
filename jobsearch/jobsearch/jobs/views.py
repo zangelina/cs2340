@@ -19,7 +19,6 @@ from .models import CustomUser, JobPosting, JobSeekerProfile, Application
 # ── Admin guard ────────────────────────────────────────
 
 def is_admin_user(user):
-    # Uses Django's built-in staff flag
     return user.is_authenticated and user.is_staff
 
 
@@ -128,20 +127,26 @@ def job_list(request):
 
 def job_detail(request, pk):
     job = get_object_or_404(JobPosting, pk=pk)
-    return render(request, "jobs/job_detail.html", {"job": job})
+    already_applied = False
+    if request.user.is_authenticated and request.user.is_job_seeker():
+        already_applied = Application.objects.filter(
+            job=job, applicant=request.user
+        ).exists()
+    return render(request, "jobs/job_detail.html", {
+        "job": job,
+        "already_applied": already_applied,
+    })
 
 
 # ── Apply to job ───────────────────────────────────────
 
 @login_required
 def apply_to_job(request, pk):
-    # Only job seekers can apply
     if not request.user.is_job_seeker():
         return redirect("home")
 
     job = get_object_or_404(JobPosting, pk=pk)
 
-    # Prevent duplicate applications
     if Application.objects.filter(job=job, applicant=request.user).exists():
         messages.info(request, "You already applied to this job.")
         return redirect("job_detail", pk=pk)
@@ -154,11 +159,21 @@ def apply_to_job(request, pk):
             app.applicant = request.user
             app.save()
             messages.success(request, "Application submitted!")
-            return redirect("job_detail", pk=pk)
+            return redirect("my_applications")
     else:
         form = ApplicationForm()
 
     return render(request, "jobs/apply.html", {"job": job, "form": form})
+
+
+# ── My Applications (job seeker tracker — user story 4) ──
+
+@login_required
+def my_applications(request):
+    if not request.user.is_job_seeker():
+        return redirect("home")
+    apps = Application.objects.filter(applicant=request.user).select_related("job").order_by("-created_at")
+    return render(request, "jobs/my_applications.html", {"applications": apps})
 
 
 # ── Recruiter CRUD ────────────────────────────────────
@@ -221,6 +236,52 @@ def job_delete(request, pk):
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
 
 
+# ── Recruiter: view applicants for a job ──────────────
+
+@login_required
+def job_applicants(request, pk):
+    if not request.user.is_recruiter():
+        return redirect("home")
+    job = get_object_or_404(JobPosting, pk=pk, recruiter=request.user)
+    apps = Application.objects.filter(job=job).select_related("applicant").order_by("-created_at")
+    return render(request, "jobs/job_applicants.html", {"job": job, "applications": apps})
+
+
+# ── Recruiter: update application status ──────────────
+
+@login_required
+def update_application_status(request, app_id):
+    if not request.user.is_recruiter():
+        return redirect("home")
+    app = get_object_or_404(Application, pk=app_id, job__recruiter=request.user)
+    if request.method == "POST":
+        new_status = request.POST.get("status", "")
+        if new_status in dict(Application.Status.choices):
+            app.status = new_status
+            app.save()
+            messages.success(request, f"Status updated to {app.get_status_display()}")
+    return redirect("job_applicants", pk=app.job.pk)
+
+
+# ── Recruiter: view a candidate's public profile ─────
+
+@login_required
+def view_candidate(request, user_id):
+    if not request.user.is_recruiter():
+        return redirect("home")
+    candidate = get_object_or_404(CustomUser, pk=user_id, role=CustomUser.Role.JOB_SEEKER)
+    profile = JobSeekerProfile.objects.filter(user=candidate).first()
+
+    if not profile or not profile.is_public:
+        messages.info(request, "This profile is private.")
+        return redirect("home")
+
+    return render(request, "jobs/view_candidate.html", {
+        "candidate": candidate,
+        "profile": profile,
+    })
+
+
 # ── Job Seeker Profile ────────────────────────────────
 
 @login_required
@@ -241,6 +302,7 @@ def seeker_profile_edit(request):
         form = JobSeekerProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
+            messages.success(request, "Profile updated!")
             return redirect("seeker_profile")
     else:
         form = JobSeekerProfileForm(instance=profile)
@@ -263,7 +325,6 @@ def admin_user_update(request, user_id):
     if request.method == "POST":
         target.is_active = ("is_active" in request.POST)
 
-        # Recruiters are NEVER allowed to become admin
         if target.is_recruiter():
             target.is_staff = False
             messages.warning(request, "Recruiters cannot be granted admin rights.")
@@ -295,13 +356,7 @@ def admin_job_delete(request, pk):
     return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})
 
 
-# ── Recommend jobs ───────────────────────────────────────
-
-def normalize_skills(text):
-    if not text:
-        return set()
-    return {s.strip().lower() for s in text.split(",") if s.strip()}
-
+# ── Recommend jobs ───────────────────────────────────
 
 @login_required
 def recommended_jobs(request):

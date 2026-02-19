@@ -98,7 +98,10 @@ class JobSeekerProfileForm(forms.ModelForm):
         model = JobSeekerProfile
         fields = [
             "headline", "skills", "education", "work_experience",
-            "links", "location", "is_public",
+            "links", "location",
+            "show_headline", "show_skills", "show_education",
+            "show_experience", "show_links", "show_location",
+            "is_public",
         ]
         widgets = {
             "headline": forms.TextInput(attrs={
@@ -129,6 +132,15 @@ class JobSeekerProfileForm(forms.ModelForm):
                 "placeholder": "Atlanta, GA"
             }),
         }
+        labels = {
+            "show_headline": "Show headline to recruiters",
+            "show_skills": "Show skills to recruiters",
+            "show_education": "Show education to recruiters",
+            "show_experience": "Show work experience to recruiters",
+            "show_links": "Show links to recruiters",
+            "show_location": "Show location to recruiters",
+            "is_public": "Make entire profile discoverable by recruiters",
+        }
 
 
 class ApplicationForm(forms.ModelForm):
@@ -139,6 +151,6 @@ class ApplicationForm(forms.ModelForm):
             "note": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4,
-                "placeholder": "Write a tailored note (optional)",
+                "placeholder": "Write a tailored note to stand out (optional)",
             })
         }

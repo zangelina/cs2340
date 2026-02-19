@@ -1,9 +1,10 @@
 from django.db import models
-
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 
-## for custom users
+
+# ── Custom User ───────────────────────────────────────
+
 class CustomUser(AbstractUser):
     class Role(models.TextChoices):
         JOB_SEEKER = "job_seeker", "Job Seeker"
@@ -27,10 +28,10 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
-## end custom user block
 
 
-#recruiter
+# ── Job Seeker Profile ────────────────────────────────
+
 class JobSeekerProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, on_delete=models.CASCADE, related_name="seeker_profile"
@@ -41,6 +42,14 @@ class JobSeekerProfile(models.Model):
     work_experience = models.TextField(blank=True)
     links = models.TextField(blank=True, help_text="Portfolio, GitHub, LinkedIn, etc.")
     location = models.CharField(max_length=200, blank=True)
+
+    # Granular privacy toggles (user story 5)
+    show_headline = models.BooleanField(default=True)
+    show_skills = models.BooleanField(default=True)
+    show_education = models.BooleanField(default=True)
+    show_experience = models.BooleanField(default=True)
+    show_links = models.BooleanField(default=True)
+    show_location = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
 
     def skills_list(self):
@@ -49,6 +58,8 @@ class JobSeekerProfile(models.Model):
     def __str__(self):
         return f"{self.user.username} — Seeker Profile"
 
+
+# ── Recruiter Profile ─────────────────────────────────
 
 class RecruiterProfile(models.Model):
     user = models.OneToOneField(
@@ -60,10 +71,9 @@ class RecruiterProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — {self.company_name}"
-##
 
 
-# jobs/models.py — add below RecruiterProfile
+# ── Job Posting ───────────────────────────────────────
 
 class JobPosting(models.Model):
     class JobType(models.TextChoices):
@@ -117,18 +127,36 @@ class JobPosting(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.company}"
-    
+
+
+# ── Application ───────────────────────────────────────
+
 class Application(models.Model):
-    job = models.ForeignKey('JobPosting', on_delete=models.CASCADE, related_name="applications")
-    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications")
+    class Status(models.TextChoices):
+        APPLIED = "applied", "Applied"
+        REVIEW = "review", "In Review"
+        INTERVIEW = "interview", "Interview"
+        OFFER = "offer", "Offer"
+        CLOSED = "closed", "Closed"
+
+    job = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="applications"
+    )
+    applicant = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications"
+    )
     note = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.APPLIED
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
-class Meta:
-    constraints = [
-        models.UniqueConstraint(fields=["job", "applicant"], name="unique_application_per_job")
-    ]
-
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["job", "applicant"], name="unique_application_per_job"
+            )
+        ]
 
     def __str__(self):
-        return f"{self.applicant.username} -> {self.job.title}"
+        return f"{self.applicant.username} → {self.job.title}"

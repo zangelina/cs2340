@@ -1,0 +1,59 @@
+{% extends "jobs/base.html" %}
+{% block title %}{{ candidate.username }} — Candidate{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 700px;">
+  <a href="javascript:history.back()" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1 mb-3">
+    ← Back
+  </a>
+
+  <div class="js-card" style="box-shadow:var(--shadow-md);">
+    <h3 class="fw-bold mb-1">{{ candidate.username }}</h3>
+
+    {% if profile.show_headline and profile.headline %}
+      <p class="fs-5 text-muted mb-0">{{ profile.headline }}</p>
+    {% endif %}
+
+    <hr>
+
+    {% if profile.show_location and profile.location %}
+    <div class="mb-3">
+      <div class="section-label">Location</div>
+      <p class="mb-0">{{ profile.location }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_skills and profile.skills_list %}
+    <div class="mb-3">
+      <div class="section-label">Skills</div>
+      <div class="d-flex flex-wrap gap-1">
+        {% for skill in profile.skills_list %}
+          <span class="js-badge js-badge-skill">{{ skill }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if profile.show_education and profile.education %}
+    <div class="mb-3">
+      <div class="section-label">Education</div>
+      <div>{{ profile.education|linebreaks }}</div>
+    </div>
+    {% endif %}
+
+    {% if profile.show_experience and profile.work_experience %}
+    <div class="mb-3">
+      <div class="section-label">Work Experience</div>
+      <div>{{ profile.work_experience|linebreaks }}</div>
+    </div>
+    {% endif %}
+
+    {% if profile.show_links and profile.links %}
+    <div class="mb-3">
+      <div class="section-label">Links</div>
+      <div>{{ profile.links|linebreaks }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

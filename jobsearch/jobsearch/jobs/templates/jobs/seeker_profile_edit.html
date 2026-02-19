@@ -1,38 +1,109 @@
-<!-- jobs/templates/jobs/seeker_profile_edit.html -->
 {% extends "jobs/base.html" %}
 {% block title %}Edit Profile{% endblock %}
 
 {% block content %}
-<div class="container py-5" style="max-width: 600px;">
+<div class="container py-5" style="max-width: 650px;">
   <h2 class="fw-bold mb-4">Edit Profile</h2>
 
-  <form method="post" class="bg-white p-4 rounded-4 border shadow-sm">
+  <form method="post">
     {% csrf_token %}
 
-    {% for field in form %}
-    <div class="mb-3">
-      <label class="form-label fw-semibold">{{ field.label }}</label>
+    <div class="js-card mb-4" style="box-shadow:var(--shadow-md);">
+      <h5 class="fw-bold mb-3">Profile Information</h5>
 
-      {% if field.name == "is_public" %}
-        <div class="form-check">
-          <input type="checkbox" name="{{ field.html_name }}" class="form-check-input"
-                 id="id_is_public" {% if field.value %}checked{% endif %}>
-          <label class="form-check-label" for="id_is_public">
-            Make my profile visible to recruiters
-          </label>
-        </div>
-      {% else %}
-        {{ field }}
-      {% endif %}
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Headline</label>
+        {{ form.headline }}
+      </div>
 
-      {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-      {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Skills</label>
+        {{ form.skills }}
+        <div class="form-text">Comma-separated (e.g. Python, Django, SQL)</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Education</label>
+        {{ form.education }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Work Experience</label>
+        {{ form.work_experience }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Links</label>
+        {{ form.links }}
+      </div>
+
+      <div class="mb-0">
+        <label class="form-label fw-semibold">Location</label>
+        {{ form.location }}
+      </div>
     </div>
-    {% endfor %}
+
+    <!-- Privacy toggles -->
+    <div class="js-card mb-4" style="box-shadow:var(--shadow-md);">
+      <h5 class="fw-bold mb-1">Privacy Settings</h5>
+      <p class="text-muted small mb-3">Choose what recruiters can see on your profile.</p>
+
+      <div class="mb-3">
+        <div class="form-check form-switch">
+          <input type="checkbox" name="is_public" class="form-check-input" id="id_is_public"
+                 {% if form.is_public.value %}checked{% endif %}>
+          <label class="form-check-label fw-semibold" for="id_is_public">
+            Make profile discoverable
+          </label>
+          <div class="form-text">When off, your profile won't appear in recruiter searches.</div>
+        </div>
+      </div>
+
+      <hr>
+      <div class="section-label mb-2">Section visibility</div>
+
+      <div class="d-flex flex-column gap-2">
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_headline" class="form-check-input" id="id_show_headline"
+                 {% if form.show_headline.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_headline">Show headline</label>
+        </div>
+
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_skills" class="form-check-input" id="id_show_skills"
+                 {% if form.show_skills.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_skills">Show skills</label>
+        </div>
+
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_education" class="form-check-input" id="id_show_education"
+                 {% if form.show_education.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_education">Show education</label>
+        </div>
+
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_experience" class="form-check-input" id="id_show_experience"
+                 {% if form.show_experience.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_experience">Show work experience</label>
+        </div>
+
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_links" class="form-check-input" id="id_show_links"
+                 {% if form.show_links.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_links">Show links</label>
+        </div>
+
+        <div class="form-check form-switch">
+          <input type="checkbox" name="show_location" class="form-check-input" id="id_show_location"
+                 {% if form.show_location.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_location">Show location</label>
+        </div>
+      </div>
+    </div>
 
     <div class="d-flex gap-2">
-      <button class="btn btn-primary" type="submit">Save Profile</button>
-      <a href="{% url 'seeker_profile' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button class="btn btn-brand" type="submit">Save Profile</button>
+      <a href="{% url 'seeker_profile' %}" class="btn btn-ghost">Cancel</a>
     </div>
   </form>
 </div>
