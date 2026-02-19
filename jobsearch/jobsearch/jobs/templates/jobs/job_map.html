@@ -1,6 +1,7 @@
 {% extends "jobs/base.html" %}
 {% block title %}Job Map{% endblock %}
 
+
 {% block content %}
 <div class="container py-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -44,7 +45,7 @@
   ];
 
   let markers = [];
-  //let userMarker = null;
+  let userMarker = null;
   let radiusCircle = null;
   let userLat = null;
   let userLng = null;
@@ -101,10 +102,19 @@
       radiusCircle = null;
     }
 
-    if (!userLat || !userLng || radius === 0) {
-      showJobs(allJobs);
-      return;
-    }
+    if (userLat === null || userLng === null) {
+  showJobs(allJobs);
+  document.getElementById('status').textContent =
+    'Click "Use my location" to filter by distance.';
+  return;
+}
+
+if (radius === 0) {
+  showJobs(allJobs);
+  document.getElementById('status').textContent =
+    `Showing all ${allJobs.length} jobs`;
+  return;
+}
 
     // Draw radius circle
     radiusCircle = L.circle([userLat, userLng], {
@@ -132,28 +142,41 @@
 
   // Locate user
   document.getElementById('locate-btn').addEventListener('click', function() {
-    if (!navigator.geolocation) {
-      document.getElementById('status').textContent = 'Geolocation not supported by your browser.';
-      return;
-    }
+  if (!navigator.geolocation) {
+    document.getElementById('status').textContent = 'Geolocation not supported by your browser.';
+    return;
+  }
 
-    document.getElementById('status').textContent = 'Locating...';
+  document.getElementById('status').textContent = 'Locating...';
 
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        userLat = pos.coords.latitude;
-        userLng = pos.coords.longitude;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
 
-        document.getElementById('status').textContent = 'Location found. Use the distance slider to filter jobs.';
-        map.setView([userLat, userLng], 12);
-
-        filterByDistance();
-      },
-      function(err) {
-        document.getElementById('status').textContent = 'Could not get location: ' + err.message;
+      // Remove old marker if it exists
+      if (userMarker) {
+        map.removeLayer(userMarker);
       }
-    );
-  });
+
+      // Add new user marker
+      userMarker = L.marker([userLat, userLng]).addTo(map)
+        .bindPopup("Your Location")
+        .openPopup();
+
+      document.getElementById('status').textContent =
+        'Location found. Use the distance slider to filter jobs.';
+
+      map.setView([userLat, userLng], 12);
+
+      filterByDistance();
+    },
+    function(err) {
+      document.getElementById('status').textContent =
+        'Could not get location: ' + err.message;
+    }
+  );
+});
 
   // Re-filter when radius changes
   function updateRadiusLabel() {
