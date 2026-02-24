@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
+import re
 
 from .forms import (
     JobSeekerRegistrationForm,
@@ -182,7 +183,7 @@ def my_applications(request):
 def recruiter_dashboard(request):
     if not request.user.is_recruiter():
         return redirect("home")
-    jobs = JobPosting.objects.filter(recruiter=request.user)
+    jobs = JobPosting.objects.filter(recruiter=request.user).order_by("-created_at")
     return render(request, "jobs/recruiter_dashboard.html", {"jobs": jobs})
 
 
@@ -197,11 +198,12 @@ def job_create(request):
             job = form.save(commit=False)
             job.recruiter = request.user
             job.save()
+            messages.success(request, "Job posted!")
             return redirect("recruiter_dashboard")
     else:
         form = JobPostingForm()
 
-    return render(request, "jobs/job_form.html", {"form": form, "editing": False})
+    return render(request, "jobs/job_form.html", {"form": form, "mode": "create"})
 
 
 @login_required
@@ -219,7 +221,7 @@ def job_edit(request, pk):
     else:
         form = JobPostingForm(instance=job)
 
-    return render(request, "jobs/job_form.html", {"form": form, "editing": True})
+    return render(request, "jobs/job_form.html", {"form": form, "mode": "edit", "job": job})
 
 
 @login_required
@@ -231,6 +233,7 @@ def job_delete(request, pk):
 
     if request.method == "POST":
         job.delete()
+        messages.success(request, "Job deleted.")
         return redirect("recruiter_dashboard")
 
     return render(request, "jobs/job_confirm_delete.html", {"job": job})
@@ -262,6 +265,48 @@ def update_application_status(request, app_id):
             messages.success(request, f"Status updated to {app.get_status_display()}")
     return redirect("job_applicants", pk=app.job.pk)
 
+# ── Recruiter: candidate search (User Story 11) ───────
+
+
+
+@login_required
+
+def recruiter_candidate_search(request):
+
+    if not request.user.is_recruiter():
+
+        return redirect("home")
+
+    skills_q = request.GET.get("skills", "").strip()
+    location_q = request.GET.get("location", "").strip()
+    projects_q = request.GET.get("projects", "").strip()
+
+    profiles = JobSeekerProfile.objects.select_related("user").filter(
+        user__role=CustomUser.Role.JOB_SEEKER
+    ).filter(
+        Q(is_public=True) | Q(user__applications__job__recruiter=request.user)
+    ).distinct()
+
+    if skills_q:
+        profiles = profiles.filter(show_skills=True)
+        terms = [t.strip() for t in re.split(r"[,\s]+", skills_q) if t.strip()]
+        for t in terms:
+            profiles = profiles.filter(Q(skills__icontains=t) | Q(user__username__icontains=t))
+
+    if location_q:
+        profiles = profiles.filter(show_location=True)
+        profiles = profiles.filter(location__icontains=location_q)
+
+    if projects_q:
+        profiles = profiles.filter(show_projects=True)
+        profiles = profiles.filter(projects__icontains=projects_q)
+
+    return render(request, "jobs/recruiter_candidate_search.html", {
+        "profiles": profiles,
+        "skills": skills_q,
+        "location": location_q,
+        "projects": projects_q,
+    })
 
 # ── Recruiter: view a candidate's public profile ─────
 
@@ -272,7 +317,13 @@ def view_candidate(request, user_id):
     candidate = get_object_or_404(CustomUser, pk=user_id, role=CustomUser.Role.JOB_SEEKER)
     profile = JobSeekerProfile.objects.filter(user=candidate).first()
 
-    if not profile or not profile.is_public:
+    if not profile:
+        messages.info(request, "This profile is private.")
+        return redirect("home")
+    has_access = profile.is_public or Application.objects.filter(
+        job__recruiter=request.user, applicant=candidate
+    ).exists()
+    if not has_access:
         messages.info(request, "This profile is private.")
         return redirect("home")
 
@@ -340,7 +391,7 @@ def admin_user_update(request, user_id):
 
 @admin_required
 def admin_job_list(request):
-    jobs = JobPosting.objects.all().order_by("-id")
+    jobs = JobPosting.objects.all().order_by("-created_at")
     return render(request, "jobs/admin_job_list.html", {"jobs": jobs})
 
 
@@ -350,7 +401,7 @@ def admin_job_delete(request, pk):
 
     if request.method == "POST":
         job.delete()
-        messages.success(request, "Job post removed.")
+        messages.success(request, "Job deleted.")
         return redirect("admin_job_list")
 
     return render(request, "jobs/admin_job_confirm_delete.html", {"job": job})
@@ -362,20 +413,13 @@ def admin_job_delete(request, pk):
 def recommended_jobs(request):
     if not request.user.is_job_seeker():
         return redirect("home")
-
-    profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
-    skills_list = [s.strip() for s in (profile.skills or "").split(",") if s.strip()]
-
-    jobs = JobPosting.objects.filter(is_active=True)
-    recommended = []
-
-    if skills_list:
-        for job in jobs:
-            text = f"{job.title} {job.description} {getattr(job, 'skills', '')} {job.company}".lower()
-            if any(skill.lower() in text for skill in skills_list):
-                recommended.append(job)
-
-    return render(request, "jobs/recommended_jobs.html", {
-        "jobs": recommended,
-        "skills_list": skills_list,
-    })
+    profile = JobSeekerProfile.objects.filter(user=request.user).first()
+    if not profile or not profile.skills.strip():
+        messages.info(request, "Add skills to your profile to get recommendations.")
+        return redirect("seeker_profile_edit")
+    skills = profile.skills_list()
+    q = Q()
+    for s in skills:
+        q |= Q(skills__icontains=s) | Q(title__icontains=s)
+    jobs = JobPosting.objects.filter(is_active=True).filter(q).distinct()[:30]
+    return render(request, "jobs/recommended_jobs.html", {"jobs": jobs, "skills": skills})
