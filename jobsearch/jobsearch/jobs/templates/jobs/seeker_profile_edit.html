@@ -23,6 +23,11 @@
       </div>
 
       <div class="mb-3">
+        <label class="form-label fw-semibold">Projects</label>
+        {{ form.projects }}
+        <div class="form-text">Highlight key projects (coursework, personal, open-source, etc.)</div>
+      </div>
+      <div class="mb-3">
         <label class="form-label fw-semibold">Education</label>
         {{ form.education }}
       </div>
@@ -94,6 +99,11 @@
         </div>
 
         <div class="form-check form-switch">
+          <input type="checkbox" name="show_projects" class="form-check-input" id="id_show_projects"
+                 {% if form.show_projects.value %}checked{% endif %}>
+          <label class="form-check-label" for="id_show_projects">Show projects</label>
+        </div>
+        <div class="form-check form-switch">
           <input type="checkbox" name="show_location" class="form-check-input" id="id_show_location"
                  {% if form.show_location.value %}checked{% endif %}>
           <label class="form-check-label" for="id_show_location">Show location</label>
@@ -102,8 +112,8 @@
     </div>
 
     <div class="d-flex gap-2">
-      <button class="btn btn-brand" type="submit">Save Profile</button>
-      <a href="{% url 'seeker_profile' %}" class="btn btn-ghost">Cancel</a>
+      <button class="btn btn-brand" type="submit">Save</button>
+      <a class="btn btn-ghost" href="{% url 'seeker_profile' %}">Cancel</a>
     </div>
   </form>
 </div>
