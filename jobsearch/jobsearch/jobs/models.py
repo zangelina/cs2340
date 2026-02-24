@@ -41,6 +41,7 @@ class JobSeekerProfile(models.Model):
     education = models.TextField(blank=True)
     work_experience = models.TextField(blank=True)
     links = models.TextField(blank=True, help_text="Portfolio, GitHub, LinkedIn, etc.")
+    projects = models.TextField(blank=True, help_text="Project highlights or portfolio work")
     location = models.CharField(max_length=200, blank=True)
 
     # Granular privacy toggles (user story 5)
@@ -49,6 +50,7 @@ class JobSeekerProfile(models.Model):
     show_education = models.BooleanField(default=True)
     show_experience = models.BooleanField(default=True)
     show_links = models.BooleanField(default=True)
+    show_projects = models.BooleanField(default=True)
     show_location = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
 
