@@ -49,6 +49,17 @@
 
     <div class="mb-3">
       <div class="section-label">
+        Projects
+        {% if not profile.show_projects %}<span class="js-badge js-badge-warning ms-1" style="font-size:.65rem;">Hidden</span>{% endif %}
+      </div>
+      {% if profile.projects %}
+        <div>{{ profile.projects|linebreaks }}</div>
+      {% else %}
+        <p class="text-muted fst-italic mb-0">Not specified</p>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      <div class="section-label">
         Education
         {% if not profile.show_education %}<span class="js-badge js-badge-warning ms-1" style="font-size:.65rem;">Hidden</span>{% endif %}
       </div>
@@ -71,7 +82,7 @@
       {% endif %}
     </div>
 
-    <div class="mb-3">
+    <div class="mb-0">
       <div class="section-label">
         Links
         {% if not profile.show_links %}<span class="js-badge js-badge-warning ms-1" style="font-size:.65rem;">Hidden</span>{% endif %}
@@ -79,16 +90,7 @@
       {% if profile.links %}
         <div>{{ profile.links|linebreaks }}</div>
       {% else %}
-        <p class="text-muted fst-italic mb-0">No links added</p>
-      {% endif %}
-    </div>
-
-    <div class="pt-3" style="border-top:1px solid var(--border);">
-      <div class="section-label">Profile Visibility</div>
-      {% if profile.is_public %}
-        <span class="js-badge js-badge-success">Public — Recruiters can find you</span>
-      {% else %}
-        <span class="js-badge js-badge-muted">Private — Hidden from recruiter searches</span>
+        <p class="text-muted fst-italic mb-0">Not specified</p>
       {% endif %}
     </div>
   </div>
