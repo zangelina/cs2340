@@ -34,6 +34,13 @@
     </div>
     {% endif %}
 
+    {% if profile.show_projects and profile.projects %}
+    <div class="mb-3">
+      <div class="section-label">Projects</div>
+      <div>{{ profile.projects|linebreaks }}</div>
+    </div>
+    {% endif %}
+
     {% if profile.show_education and profile.education %}
     <div class="mb-3">
       <div class="section-label">Education</div>
