@@ -85,9 +85,7 @@ class JobPostingForm(forms.ModelForm):
                 "class": "form-control",
                 "placeholder": "e.g. 90000"
             }),
-            "visa_sponsorship": forms.CheckboxInput(attrs={
-                "class": "form-check-input"
-            }),
+            "visa_sponsorship": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "latitude": forms.HiddenInput(),
             "longitude": forms.HiddenInput(),
         }
@@ -98,9 +96,9 @@ class JobSeekerProfileForm(forms.ModelForm):
         model = JobSeekerProfile
         fields = [
             "headline", "skills", "education", "work_experience",
-            "links", "location",
+            "links", "projects", "location",
             "show_headline", "show_skills", "show_education",
-            "show_experience", "show_links", "show_location",
+            "show_experience", "show_links", "show_projects", "show_location",
             "is_public",
         ]
         widgets = {
@@ -127,6 +125,11 @@ class JobSeekerProfileForm(forms.ModelForm):
                 "rows": 2,
                 "placeholder": "GitHub, LinkedIn, portfolio URLs"
             }),
+            "projects": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 3,
+                "placeholder": "Project highlights (e.g. Built a Django job board, ML classifier, etc.)"
+            }),
             "location": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Atlanta, GA"
@@ -138,6 +141,7 @@ class JobSeekerProfileForm(forms.ModelForm):
             "show_education": "Show education to recruiters",
             "show_experience": "Show work experience to recruiters",
             "show_links": "Show links to recruiters",
+            "show_projects": "Show projects to recruiters",
             "show_location": "Show location to recruiters",
             "is_public": "Make entire profile discoverable by recruiters",
         }
