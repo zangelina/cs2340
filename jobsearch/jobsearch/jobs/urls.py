@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Recruiter
     path("recruiter/dashboard/", views.recruiter_dashboard, name="recruiter_dashboard"),
+    path("recruiter/candidates/search/", views.recruiter_candidate_search, name="recruiter_candidate_search"),
     path("recruiter/jobs/new/", views.job_create, name="job_create"),
     path("recruiter/jobs/<int:pk>/edit/", views.job_edit, name="job_edit"),
     path("recruiter/jobs/<int:pk>/delete/", views.job_delete, name="job_delete"),
