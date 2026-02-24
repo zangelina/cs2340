@@ -1,0 +1,93 @@
+{% extends "jobs/base.html" %}
+{% block title %}Search Candidates{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 950px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Search Candidates</h2>
+      <div class="text-muted">Filter by skills, location, and projects to find the right fits quickly.</div>
+    </div>
+  </div>
+
+  <form method="get" class="bg-white p-4 rounded-4 border shadow-sm mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Skills</label>
+        <input class="form-control" name="skills" value="{{ skills }}" placeholder="e.g. Python, Django, SQL">
+        <div class="form-text">Searches only candidates who show their skills.</div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Location</label>
+        <input class="form-control" name="location" value="{{ location }}" placeholder="e.g. Atlanta, GA">
+        <div class="form-text">Searches only candidates who show location.</div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Projects</label>
+        <input class="form-control" name="projects" value="{{ projects }}" placeholder="e.g. job board, recommender">
+        <div class="form-text">Searches only candidates who show projects.</div>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-brand" type="submit">Search</button>
+      </div>
+    </div>
+  </form>
+
+  {% if profiles %}
+    <div class="d-flex flex-column gap-2">
+      {% for p in profiles %}
+        <div class="js-card js-card-hover">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h5 class="fw-bold mb-0">{{ p.user.username }}</h5>
+                {% if not p.is_public %}
+                  <span class="js-badge js-badge-warning">Private (Applied)</span>
+                {% endif %}
+              </div>
+
+              {% if p.show_headline and p.headline %}
+                <div class="text-muted mt-1">{{ p.headline }}</div>
+              {% endif %}
+
+              {% if p.show_location and p.location %}
+                <div class="mt-2">
+                  <span class="section-label" style="display:inline;">Location</span>
+                  <span class="ms-2">{{ p.location }}</span>
+                </div>
+              {% endif %}
+
+              {% if p.show_skills and p.skills_list %}
+                <div class="mt-2">
+                  <span class="section-label" style="display:inline;">Skills</span>
+                  <div class="d-flex flex-wrap gap-1 mt-1">
+                    {% for s in p.skills_list %}
+                      <span class="js-badge js-badge-skill">{{ s }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+
+              {% if p.show_projects and p.projects %}
+                <div class="mt-2">
+                  <span class="section-label" style="display:inline;">Projects</span>
+                  <div class="text-muted mt-1">{{ p.projects|truncatechars:140 }}</div>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="text-end">
+              <a class="btn btn-ghost btn-sm" href="{% url 'view_candidate' p.user.id %}">View</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-muted fst-italic">No candidates found.</div>
+  {% endif %}
+</div>
+{% endblock %}
