@@ -1,0 +1,59 @@
+{% extends "jobs/base.html" %}
+{% block title %}Reports — Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 900px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Profile Reports</h2>
+    <a href="{% url 'admin_user_list' %}" class="btn btn-ghost btn-sm">← Admin Home</a>
+  </div>
+
+  {% if reports %}
+    {% for r in reports %}
+    <div class="js-card mb-2 {% if r.reviewed %}opacity-50{% endif %}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'view_candidate' r.profile.user.pk %}" class="fw-bold text-decoration-none">
+              {{ r.profile.user.first_name }} {{ r.profile.user.last_name }}
+            </a>
+            <span class="js-badge
+              {% if r.reason == 'inappropriate' %}js-badge-danger
+              {% elif r.reason == 'spam' %}js-badge-warning
+              {% elif r.reason == 'harmful' %}js-badge-danger
+              {% else %}js-badge-skill
+              {% endif %}">
+              {{ r.get_reason_display }}
+            </span>
+            {% if r.reviewed %}
+              <span class="js-badge js-badge-success">Reviewed</span>
+            {% endif %}
+          </div>
+          <div class="text-muted small mt-1">
+            Reported by {{ r.reported_by.username }} · {{ r.created_at|date:"M j, Y g:i A" }}
+          </div>
+          {% if r.details %}
+            <div class="text-muted small mt-1 fst-italic">"{{ r.details|truncatewords:30 }}"</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2">
+          {% if not r.reviewed %}
+          <form method="post" action="{% url 'admin_report_resolve' r.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-ghost btn-sm" type="submit">Mark Reviewed</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="js-card text-center py-5">
+      <div style="font-size:2.5rem;margin-bottom:.5rem;">✅</div>
+      <h5 class="fw-bold">No reports</h5>
+      <p class="text-muted">No profiles have been flagged.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

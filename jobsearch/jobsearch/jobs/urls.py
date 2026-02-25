@@ -3,7 +3,6 @@ from django.contrib.auth.views import LogoutView
 from . import views
 
 urlpatterns = [
-    # Home + Auth
     path("", views.home, name="home"),
     path("register/seeker/", views.register_seeker, name="register_seeker"),
     path("register/recruiter/", views.register_recruiter, name="register_recruiter"),
@@ -20,27 +19,31 @@ urlpatterns = [
 
     # Recruiter
     path("recruiter/dashboard/", views.recruiter_dashboard, name="recruiter_dashboard"),
-    path("recruiter/candidates/search/", views.recruiter_candidate_search, name="recruiter_candidate_search"),
     path("recruiter/jobs/new/", views.job_create, name="job_create"),
     path("recruiter/jobs/<int:pk>/edit/", views.job_edit, name="job_edit"),
     path("recruiter/jobs/<int:pk>/delete/", views.job_delete, name="job_delete"),
     path("recruiter/jobs/<int:pk>/applicants/", views.job_applicants, name="job_applicants"),
     path("recruiter/applications/<int:app_id>/status/", views.update_application_status, name="update_application_status"),
     path("recruiter/candidate/<int:user_id>/", views.view_candidate, name="view_candidate"),
+    path("recruiter/candidates/", views.recruiter_candidate_search, name="recruiter_candidate_search"),
 
     # Job Seeker Profile
     path("profile/", views.seeker_profile, name="seeker_profile"),
     path("profile/edit/", views.seeker_profile_edit, name="seeker_profile_edit"),
+    path("account/delete/", views.delete_account, name="delete_account"),
 
-    # Admin (custom pages)
+    # Report
+    path("report/<int:user_id>/", views.report_profile, name="report_profile"),
+
+    # Admin
     path("site-admin/users/", views.admin_user_list, name="admin_user_list"),
     path("site-admin/users/<int:user_id>/", views.admin_user_update, name="admin_user_update"),
     path("site-admin/jobs/", views.admin_job_list, name="admin_job_list"),
     path("site-admin/jobs/<int:pk>/delete/", views.admin_job_delete, name="admin_job_delete"),
+    path("site-admin/reports/", views.admin_report_list, name="admin_report_list"),
+    path("site-admin/reports/<int:pk>/resolve/", views.admin_report_resolve, name="admin_report_resolve"),
 
-    # Map
+    # Map + Recommendations
     path("map/", views.job_map, name="job_map"),
-
-    # Recommendations
     path("recommended/", views.recommended_jobs, name="recommended_jobs"),
 ]

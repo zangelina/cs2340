@@ -1,0 +1,44 @@
+{% extends "jobs/base.html" %}
+{% block title %}Report Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 550px;">
+  <a href="javascript:history.back()" class="text-decoration-none text-muted mb-3 d-inline-block">← Back</a>
+
+  <div class="js-card" style="box-shadow:var(--shadow-md);">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span style="font-size:1.5rem;">🚩</span>
+      <div>
+        <h4 class="fw-bold mb-0">Report Profile</h4>
+        <div class="text-muted small">{{ candidate.first_name }} {{ candidate.last_name }} (@{{ candidate.username }})</div>
+      </div>
+    </div>
+
+    <p class="text-muted small mb-3">
+      Reports are reviewed by admins. The user will not be notified that you submitted a report.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Reason</label>
+        {{ form.reason }}
+        {% for e in form.reason.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Additional details (optional)</label>
+        {{ form.details }}
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-ghost btn-sm" type="submit" style="color:var(--danger);border-color:#fecaca;padding:10px 20px;">
+          Submit Report
+        </button>
+        <a href="{% url 'view_candidate' candidate.pk %}" class="btn btn-ghost btn-sm" style="padding:10px 20px;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

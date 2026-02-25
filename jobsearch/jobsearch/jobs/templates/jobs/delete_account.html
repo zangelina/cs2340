@@ -1,0 +1,26 @@
+{% extends "jobs/base.html" %}
+{% block title %}Delete Account{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 500px;">
+  <div class="js-card text-center" style="box-shadow:var(--shadow-md);">
+    <div style="font-size:2.5rem;margin-bottom:.5rem;">⚠️</div>
+    <h3 class="fw-bold mb-2">Delete Your Account</h3>
+    <p class="text-muted mb-4">
+      This will permanently delete your account, profile, and all applications. This cannot be undone.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="d-flex justify-content-center gap-2">
+        <button class="btn btn-ghost btn-sm" type="submit" style="color:var(--danger);border-color:#fecaca;padding:10px 24px;">
+          Yes, delete my account
+        </button>
+        <a href="{% url 'seeker_profile' %}" class="btn btn-brand btn-sm" style="padding:10px 24px;">
+          Keep my account
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

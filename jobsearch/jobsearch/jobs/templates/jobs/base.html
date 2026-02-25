@@ -139,6 +139,7 @@
 
         {% if user.is_staff %}
           <a class="btn btn-ghost btn-sm" href="{% url 'admin_user_list' %}" style="border-color:var(--warning);color:var(--warning);">Admin</a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'admin_report_list' %}" style="border-color:var(--warning);color:var(--warning);">Reports</a>
         {% endif %}
 
         <a class="btn btn-ghost btn-sm" href="{% url 'job_map' %}">Map</a>

@@ -36,26 +36,107 @@ class JobSeekerProfile(models.Model):
     user = models.OneToOneField(
         CustomUser, on_delete=models.CASCADE, related_name="seeker_profile"
     )
+
+    # Identity
+    profile_picture = models.ImageField(
+        upload_to="profile_pics/", blank=True, null=True
+    )
     headline = models.CharField(max_length=200, blank=True)
+    bio = models.TextField(blank=True, help_text="Short summary about yourself")
+    location = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    website = models.URLField(blank=True)
+
+    # Professional
     skills = models.TextField(blank=True, help_text="Comma-separated skills")
     education = models.TextField(blank=True)
     work_experience = models.TextField(blank=True)
-    links = models.TextField(blank=True, help_text="Portfolio, GitHub, LinkedIn, etc.")
-    projects = models.TextField(blank=True, help_text="Project highlights or portfolio work")
-    location = models.CharField(max_length=200, blank=True)
+    projects = models.TextField(blank=True, help_text="Key projects, coursework, open-source contributions")
+    certifications = models.TextField(blank=True, help_text="Certifications, licenses, awards")
+    languages = models.TextField(blank=True, help_text="Spoken languages, e.g. English (Native), Spanish (Conversational)")
+    links = models.TextField(blank=True, help_text="GitHub, LinkedIn, portfolio URLs (one per line)")
 
-    # Granular privacy toggles (user story 5)
+    # Featured showcase
+    featured_label = models.CharField(
+        max_length=100, blank=True,
+        help_text="Label shown above the embed, e.g. 'My Portfolio', 'Intro Video'"
+    )
+    featured_url = models.URLField(
+        blank=True,
+        help_text="Link to a website, portfolio, or project (displayed as a clickable card)"
+    )
+    featured_video_url = models.URLField(
+        blank=True,
+        help_text="YouTube or Vimeo link for an introduction / project video"
+    )
+
+    # Preferences
+    desired_job_title = models.CharField(max_length=200, blank=True)
+    desired_salary_min = models.PositiveIntegerField(null=True, blank=True)
+    open_to_remote = models.BooleanField(default=True)
+    open_to_relocation = models.BooleanField(default=False)
+    visa_required = models.BooleanField(default=False)
+
+    # Privacy toggles
+    is_public = models.BooleanField(default=True)
+    show_photo = models.BooleanField(default=True)
     show_headline = models.BooleanField(default=True)
+    show_bio = models.BooleanField(default=True)
     show_skills = models.BooleanField(default=True)
     show_education = models.BooleanField(default=True)
     show_experience = models.BooleanField(default=True)
-    show_links = models.BooleanField(default=True)
     show_projects = models.BooleanField(default=True)
+    show_certifications = models.BooleanField(default=True)
+    show_languages = models.BooleanField(default=True)
+    show_links = models.BooleanField(default=True)
     show_location = models.BooleanField(default=True)
-    is_public = models.BooleanField(default=True)
+    show_phone = models.BooleanField(default=False)
+    show_email = models.BooleanField(default=True)
+    show_featured = models.BooleanField(default=True)
 
     def skills_list(self):
         return [s.strip() for s in self.skills.split(",") if s.strip()]
+
+    def is_complete(self):
+        return all([
+            self.user.first_name,
+            self.user.last_name,
+            self.headline,
+            self.skills.strip(),
+        ])
+
+    def completion_missing(self):
+        missing = []
+        if not self.user.first_name:
+            missing.append("First name")
+        if not self.user.last_name:
+            missing.append("Last name")
+        if not self.headline:
+            missing.append("Headline")
+        if not self.skills.strip():
+            missing.append("At least one skill")
+        return missing
+
+    def has_featured(self):
+        return bool(self.featured_url or self.featured_video_url)
+
+    def video_embed_url(self):
+        """Convert YouTube/Vimeo watch URLs to embeddable URLs."""
+        url = self.featured_video_url
+        if not url:
+            return ""
+        # YouTube
+        if "youtube.com/watch" in url:
+            vid = url.split("v=")[-1].split("&")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        if "youtu.be/" in url:
+            vid = url.split("youtu.be/")[-1].split("?")[0]
+            return f"https://www.youtube.com/embed/{vid}"
+        # Vimeo
+        if "vimeo.com/" in url:
+            vid = url.strip("/").split("/")[-1]
+            return f"https://player.vimeo.com/video/{vid}"
+        return url
 
     def __str__(self):
         return f"{self.user.username} — Seeker Profile"
@@ -162,3 +243,31 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.applicant.username} → {self.job.title}"
+
+
+# ── Profile Report ────────────────────────────────────
+
+class ProfileReport(models.Model):
+    class Reason(models.TextChoices):
+        INAPPROPRIATE = "inappropriate", "Inappropriate or offensive content"
+        SPAM = "spam", "Spam or misleading links"
+        IMPERSONATION = "impersonation", "Impersonation"
+        HARMFUL = "harmful", "Harmful or dangerous content"
+        OTHER = "other", "Other"
+
+    profile = models.ForeignKey(
+        JobSeekerProfile, on_delete=models.CASCADE, related_name="reports"
+    )
+    reported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="filed_reports"
+    )
+    reason = models.CharField(max_length=20, choices=Reason.choices)
+    details = models.TextField(blank=True, help_text="Optional additional context")
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Report on {self.profile.user.username} by {self.reported_by.username}"
