@@ -10,12 +10,16 @@
 
   {% if not profile.is_complete %}
   <div class="alert alert-warning mb-4" style="border-radius:12px;">
-    <strong>⚠ Profile incomplete.</strong> You need to fill out the following fields before you can apply to jobs:
-    <ul>
-      {% for field in profile.completion_missing %}
-        <li>{{ field }}</li>
-      {% endfor %}
-    </ul>
+    {% if profile.completion_missing %}
+      <strong>⚠ Profile incomplete.</strong>
+      You need to fill out the following fields before you can apply to jobs:
+
+      <ul>
+        {% for field in profile.completion_missing %}
+          <li>{{ field }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
     <a href="{% url 'seeker_profile_edit' %}" class="fw-bold">Complete now →</a>
   </div>
   {% endif %}
@@ -114,12 +118,13 @@
         </div>
         {% endif %}
 
-        {% if profile.desired_job_title or profile.open_to_remote or profile.open_to_relocation or profile.visa_required %}
+        {% if profile.desired_job_title or profile.open_to_remote or profile.open_to_relocation or profile.visa_required or profile.commute_distance %}
         <div class="mb-3">
           <div class="section-label">Job Preferences</div>
           <div class="d-flex flex-wrap gap-2">
             {% if profile.desired_job_title %}<span class="js-badge js-badge-skill">{{ profile.desired_job_title }}</span>{% endif %}
             {% if profile.desired_salary_min %}<span class="js-badge js-badge-success">${{ profile.desired_salary_min|floatformat:0 }}+ desired</span>{% endif %}
+            {% if profile.commute_distance %}<span class="js-badge js-badge-skill">{{ profile.commute_distance }} {{ profile.get_distance_unit_display|lower }} commute</span>{% endif %}
             {% if profile.open_to_remote %}<span class="js-badge js-badge-skill">Open to remote</span>{% endif %}
             {% if profile.open_to_relocation %}<span class="js-badge js-badge-skill">Open to relocation</span>{% endif %}
             {% if profile.visa_required %}<span class="js-badge js-badge-warning">Visa needed</span>{% endif %}

@@ -9,8 +9,12 @@
     <div class="d-flex align-items-center gap-3">
       <label class="fw-semibold text-secondary mb-0">Distance:</label>
       <div class="d-flex align-items-center gap-2" style="min-width: 240px;">
-        <input id="radius-range" type="range" class="form-range" min="0" max="100" step="1" value="10" aria-label="Distance radius in miles">
-        <span id="radius-value" class="small text-secondary fw-semibold" style="min-width: 70px; text-align: right;">10 miles</span>
+        <input id="radius-range" type="range" class="form-range" min="0" max="100" step="1" value="{{ commute_distance }}" aria-label="Distance radius">
+        <span id="radius-value" class="small text-secondary fw-semibold" style="min-width: 80px; text-align: right;">{{ commute_distance }} {{ distance_unit }}</span>
+      </div>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Distance unit">
+        <button type="button" class="btn btn-outline-secondary unit-btn {% if distance_unit == 'mi' %}active{% endif %}" data-unit="mi">Miles</button>
+        <button type="button" class="btn btn-outline-secondary unit-btn {% if distance_unit == 'km' %}active{% endif %}" data-unit="km">km</button>
       </div>
       <button id="locate-btn" class="btn btn-primary btn-sm">Use my location</button>
     </div>
@@ -30,7 +34,6 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // All jobs with coordinates
   const allJobs = [
     {% for job in jobs %}
     {
@@ -49,14 +52,14 @@
   let radiusCircle = null;
   let userLat = null;
   let userLng = null;
+  let currentUnit = "{{ distance_unit }}";
 
-  function milesToMeters(miles) {
-    return miles * 1609.34;
+  function toMeters(value, unit) {
+    return unit === "km" ? value * 1000 : value * 1609.34;
   }
 
-  function distanceBetween(lat1, lon1, lat2, lon2) {
-    // Haversine formula, returns miles
-    const R = 3958.8;
+  function distanceBetween(lat1, lon1, lat2, lon2, unit) {
+    const R = unit === "km" ? 6371 : 3958.8;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -72,124 +75,99 @@
   }
 
   function showJobs(jobs) {
-    // Clear existing markers
     clearMarkers();
-
     jobs.forEach(job => {
       const marker = L.marker([job.lat, job.lng]).addTo(map);
-      marker.bindPopup(`
-        <div style="min-width: 200px;">
-          <div style="font-weight: 700;">${job.title}</div>
-          <div style="color: #666;">${job.company}</div>
-          <div style="margin-top: 6px;">
-            <a href="${job.url}" class="btn btn-sm btn-primary">View</a>
-          </div>
-        </div>
-      `);
+      let popup = `<div style="min-width:200px;"><div style="font-weight:700;">${job.title}</div>
+        <div style="color:#666;">${job.company}</div>`;
+      if (job.distance !== undefined) {
+        popup += `<div style="color:#0a66c2;font-weight:600;margin-top:4px;">${job.distance.toFixed(1)} ${currentUnit}</div>`;
+      }
+      popup += `<div style="margin-top:6px;"><a href="${job.url}" class="btn btn-sm btn-primary">View</a></div></div>`;
+      marker.bindPopup(popup);
       markers.push(marker);
     });
-
     document.getElementById('status').textContent =
       `Showing ${jobs.length} of ${allJobs.length} jobs`;
   }
 
   function filterByDistance() {
     const radius = parseFloat(document.getElementById('radius-range').value);
-
-    // Remove old circle
-    if (radiusCircle) {
-      map.removeLayer(radiusCircle);
-      radiusCircle = null;
-    }
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
 
     if (userLat === null || userLng === null) {
-  showJobs(allJobs);
-  document.getElementById('status').textContent =
-    'Click "Use my location" to filter by distance.';
-  return;
-}
+      showJobs(allJobs);
+      document.getElementById('status').textContent = 'Click "Use my location" to filter by distance.';
+      return;
+    }
 
-if (radius === 0) {
-  showJobs(allJobs);
-  document.getElementById('status').textContent =
-    `Showing all ${allJobs.length} jobs`;
-  return;
-}
+    if (radius === 0) {
+      showJobs(allJobs);
+      document.getElementById('status').textContent = `Showing all ${allJobs.length} jobs`;
+      return;
+    }
 
-    // Draw radius circle
     radiusCircle = L.circle([userLat, userLng], {
-      radius: milesToMeters(radius),
-      color: '#0a66c2',
-      fillColor: '#0a66c2',
-      fillOpacity: 0.08,
-      weight: 2
+      radius: toMeters(radius, currentUnit),
+      color: '#0a66c2', fillColor: '#0a66c2', fillOpacity: 0.08, weight: 2
     }).addTo(map);
 
-    // Filter jobs
     const filtered = allJobs
-      .map(job => ({
-        ...job,
-        distance: distanceBetween(userLat, userLng, job.lat, job.lng)
-      }))
+      .map(job => ({ ...job, distance: distanceBetween(userLat, userLng, job.lat, job.lng, currentUnit) }))
       .filter(job => job.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
 
     showJobs(filtered);
-
-    // Fit map to circle bounds
     map.fitBounds(radiusCircle.getBounds());
   }
 
   // Locate user
   document.getElementById('locate-btn').addEventListener('click', function() {
-  if (!navigator.geolocation) {
-    document.getElementById('status').textContent = 'Geolocation not supported by your browser.';
-    return;
-  }
-
-  document.getElementById('status').textContent = 'Locating...';
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      userLat = pos.coords.latitude;
-      userLng = pos.coords.longitude;
-
-      // Remove old marker if it exists
-      if (userMarker) {
-        map.removeLayer(userMarker);
-      }
-
-      // Add new user marker
-      userMarker = L.marker([userLat, userLng]).addTo(map)
-        .bindPopup("Your Location")
-        .openPopup();
-
-      document.getElementById('status').textContent =
-        'Location found. Use the distance slider to filter jobs.';
-
-      map.setView([userLat, userLng], 12);
-
-      filterByDistance();
-    },
-    function(err) {
-      document.getElementById('status').textContent =
-        'Could not get location: ' + err.message;
+    if (!navigator.geolocation) {
+      document.getElementById('status').textContent = 'Geolocation not supported.';
+      return;
     }
-  );
-});
+    document.getElementById('status').textContent = 'Locating...';
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup("Your Location").openPopup();
+        document.getElementById('status').textContent = 'Location found. Use the slider to filter.';
+        map.setView([userLat, userLng], 12);
+        filterByDistance();
+      },
+      function(err) {
+        document.getElementById('status').textContent = 'Could not get location: ' + err.message;
+      }
+    );
+  });
 
-  // Re-filter when radius changes
+  // Radius slider
   function updateRadiusLabel() {
     const v = parseFloat(document.getElementById('radius-range').value);
-    document.getElementById('radius-value').textContent = (v === 0) ? 'All jobs' : `${v} miles`;
+    const label = currentUnit === "km" ? "km" : "miles";
+    document.getElementById('radius-value').textContent = (v === 0) ? 'All jobs' : `${v} ${label}`;
   }
 
-  document.getElementById('radius-range').addEventListener('input', function () {
+  document.getElementById('radius-range').addEventListener('input', function() {
     updateRadiusLabel();
     filterByDistance();
   });
 
-  // Initial load: show all jobs
+  // Unit toggle
+  document.querySelectorAll('.unit-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentUnit = this.dataset.unit;
+      updateRadiusLabel();
+      filterByDistance();
+    });
+  });
+
+  // Init
   showJobs(allJobs);
   updateRadiusLabel();
 </script>

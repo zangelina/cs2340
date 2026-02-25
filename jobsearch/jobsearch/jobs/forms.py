@@ -88,6 +88,7 @@ class JobSeekerProfileForm(forms.ModelForm):
             "certifications", "languages", "links",
             "featured_label", "featured_url", "featured_video_url",
             "desired_job_title", "desired_salary_min",
+            "commute_distance", "distance_unit",
             "open_to_remote", "open_to_relocation", "visa_required",
         ]
         widgets = {
@@ -109,6 +110,8 @@ class JobSeekerProfileForm(forms.ModelForm):
             "featured_video_url": forms.URLInput(attrs={**FC, "placeholder": "https://youtube.com/watch?v=..."}),
             "desired_job_title": forms.TextInput(attrs={**FC, "placeholder": "e.g. Software Engineer"}),
             "desired_salary_min": forms.NumberInput(attrs={**FC, "placeholder": "e.g. 70000"}),
+            "commute_distance": forms.NumberInput(attrs={**FC, "placeholder": "e.g. 25"}),
+            "distance_unit": forms.Select(attrs=FS),
         }
 
 

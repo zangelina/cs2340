@@ -77,6 +77,18 @@ class JobSeekerProfile(models.Model):
     open_to_relocation = models.BooleanField(default=False)
     visa_required = models.BooleanField(default=False)
 
+    class DistanceUnit(models.TextChoices):
+        MILES = "mi", "Miles"
+        KM = "km", "Kilometers"
+
+    commute_distance = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Maximum commute distance"
+    )
+    distance_unit = models.CharField(
+        max_length=2, choices=DistanceUnit.choices, default=DistanceUnit.MILES
+    )
+
     # Privacy toggles
     is_public = models.BooleanField(default=True)
     show_photo = models.BooleanField(default=True)

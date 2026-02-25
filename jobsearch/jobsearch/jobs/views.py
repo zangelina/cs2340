@@ -77,7 +77,19 @@ def job_map(request):
     jobs = JobPosting.objects.filter(
         is_active=True, latitude__isnull=False, longitude__isnull=False
     )
-    return render(request, "jobs/job_map.html", {"jobs": jobs})
+    commute_distance = 10
+    distance_unit = "mi"
+    if request.user.is_authenticated and request.user.is_job_seeker():
+        profile = JobSeekerProfile.objects.filter(user=request.user).first()
+        if profile:
+            if profile.commute_distance:
+                commute_distance = profile.commute_distance
+            distance_unit = profile.distance_unit or "mi"
+    return render(request, "jobs/job_map.html", {
+        "jobs": jobs,
+        "commute_distance": commute_distance,
+        "distance_unit": distance_unit,
+    })
 
 
 # ── Job Search ────────────────────────────────────────
