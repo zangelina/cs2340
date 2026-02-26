@@ -8,86 +8,378 @@
       <h2 class="fw-bold mb-1">Search Candidates</h2>
       <div class="text-muted">Filter by skills, location, and projects to find the right fits quickly.</div>
     </div>
+    <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost">Back</a>
   </div>
 
-  <form method="get" class="bg-white p-4 rounded-4 border shadow-sm mb-4">
-    <div class="row g-3 align-items-end">
-      <div class="col-md-4">
-        <label class="form-label fw-semibold">Skills</label>
-        <input class="form-control" name="skills" value="{{ skills }}" placeholder="e.g. Python, Django, SQL">
-        <div class="form-text">Searches only candidates who show their skills.</div>
-      </div>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label text-muted small">Skills</label>
+          <input type="text" name="skills" value="{{ request.GET.skills }}" class="form-control" placeholder="e.g., python, django">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label text-muted small">Location</label>
+          <input type="text" name="location" value="{{ request.GET.location }}" class="form-control" placeholder="e.g., Atlanta">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label text-muted small">Projects</label>
+          <input type="text" name="projects" value="{{ request.GET.projects }}" class="form-control" placeholder="e.g., portfolio, capstone">
+        </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-semibold">Location</label>
-        <input class="form-control" name="location" value="{{ location }}" placeholder="e.g. Atlanta, GA">
-        <div class="form-text">Searches only candidates who show location.</div>
-      </div>
-
-      <div class="col-md-3">
-        <label class="form-label fw-semibold">Projects</label>
-        <input class="form-control" name="projects" value="{{ projects }}" placeholder="e.g. job board, recommender">
-        <div class="form-text">Searches only candidates who show projects.</div>
-      </div>
-
-      <div class="col-md-2 d-grid">
-        <button class="btn btn-brand" type="submit">Search</button>
-      </div>
+        <div class="col-12 d-flex gap-2 justify-content-end">
+          <a href="{% url 'recruiter_candidate_search' %}" class="btn btn-outline-secondary">Clear</a>
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 
   {% if profiles %}
-    <div class="d-flex flex-column gap-2">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div class="section-label">Results</div>
+      <div class="text-muted small">{{ profiles|length }} candidate{{ profiles|length|pluralize }}</div>
+    </div>
+
+    <div class="vstack gap-3">
       {% for p in profiles %}
-        <div class="js-card js-card-hover">
-          <div class="d-flex justify-content-between align-items-start gap-3">
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <h5 class="fw-bold mb-0">{{ p.user.username }}</h5>
-                {% if not p.is_public %}
-                  <span class="js-badge js-badge-warning">Private (Applied)</span>
-                {% endif %}
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-bold fs-5">{{ p.user.username }}</div>
+                <div class="text-muted">{{ p.headline|default:"" }}</div>
               </div>
-
-              {% if p.show_headline and p.headline %}
-                <div class="text-muted mt-1">{{ p.headline }}</div>
-              {% endif %}
-
-              {% if p.show_location and p.location %}
-                <div class="mt-2">
-                  <span class="section-label" style="display:inline;">Location</span>
-                  <span class="ms-2">{{ p.location }}</span>
-                </div>
-              {% endif %}
-
-              {% if p.show_skills and p.skills_list %}
-                <div class="mt-2">
-                  <span class="section-label" style="display:inline;">Skills</span>
-                  <div class="d-flex flex-wrap gap-1 mt-1">
-                    {% for s in p.skills_list %}
-                      <span class="js-badge js-badge-skill">{{ s }}</span>
-                    {% endfor %}
-                  </div>
-                </div>
-              {% endif %}
-
-              {% if p.show_projects and p.projects %}
-                <div class="mt-2">
-                  <span class="section-label" style="display:inline;">Projects</span>
-                  <div class="text-muted mt-1">{{ p.projects|truncatechars:140 }}</div>
-                </div>
-              {% endif %}
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'report_profile' p.user.id %}">View</a>
             </div>
 
-            <div class="text-end">
-              <a class="btn btn-ghost btn-sm" href="{% url 'view_candidate' p.user.id %}">View</a>
+            <div class="mt-3">
+              <div class="text-muted small fw-bold mb-2">SKILLS</div>
+              <div class="d-flex flex-wrap gap-2">
+                {% for s in p.skills_list %}
+                  <span class="js-badge">{{ s }}</span>
+                {% empty %}
+                  <span class="text-muted small">No skills listed.</span>
+                {% endfor %}
+              </div>
             </div>
           </div>
         </div>
       {% endfor %}
     </div>
+
+    <hr class="my-5">
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <div class="fw-bold fs-4 mb-1">Applicant Pipeline</div>
+            <div class="text-muted">Drag applicants across columns to update their stage.</div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <div class="text-muted small fw-bold">JOB</div>
+            <select id="kbJobFilter" class="form-select form-select-sm" style="min-width: 220px;">
+              <option value="all">All jobs</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4" id="kanbanBoard">
+          <div id="kanbanColumns" class="d-flex flex-column gap-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .kb-col {
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 14px;
+        padding: 14px;
+        background: #fff;
+      }
+      .kb-col-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .kb-col-title {
+        font-size: .75rem;
+        letter-spacing: .08em;
+        color: #6c757d;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .kb-count {
+        background: #f1f3f5;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: .75rem;
+        color: #495057;
+        font-weight: 700;
+      }
+      .kb-dropzone {
+        min-height: 86px;
+        border-radius: 12px;
+        padding: 8px;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .kb-dropzone.drag-over {
+        outline: 2px dashed rgba(13,110,253,.35);
+        background: rgba(13,110,253,.03);
+      }
+      .kb-empty {
+        color: #6c757d;
+        font-size: .85rem;
+        padding: 6px 4px;
+      }
+      .kb-card {
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 14px;
+        padding: 12px;
+        background: #fff;
+        cursor: grab;
+        user-select: none;
+        width: 240px;
+      }
+      .kb-card:active { cursor: grabbing; }
+      .kb-card .name { font-weight: 700; }
+      .kb-card .line { color: #495057; font-size: .9rem; }
+      .kb-card .small { font-size: .8rem; color: #6c757d; }
+      .kb-card .btn { padding: .2rem .55rem; font-size: .8rem; border-radius: 999px; }
+      .kb-row-split {
+        border-top: 1px solid rgba(0,0,0,.08);
+        margin: 0;
+      }
+    </style>
+
+    <script>
+      (function () {
+        const STATUSES = [
+          { key: "applied", label: "Applied" },
+          { key: "in_review", label: "In Review" },
+          { key: "interview", label: "Interview" },
+          { key: "offer", label: "Offer" },
+          { key: "closed", label: "Closed" },
+        ];
+
+        const columnsEl = document.getElementById("kanbanColumns");
+        const jobFilterEl = document.getElementById("kbJobFilter");
+
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        function clearColumns() {
+          while (columnsEl.firstChild) columnsEl.removeChild(columnsEl.firstChild);
+        }
+
+        function makeApplicantCard(app) {
+          const card = document.createElement("div");
+          card.className = "kb-card";
+          card.draggable = true;
+          card.dataset.appId = app.id;
+
+          const top = document.createElement("div");
+          top.className = "d-flex justify-content-between align-items-center gap-2 mb-2";
+
+          const name = document.createElement("div");
+          name.className = "name";
+          name.textContent = app.username;
+
+          const view = document.createElement("a");
+          view.className = "btn btn-outline-primary btn-sm";
+          view.href = app.view_url;
+          view.textContent = "View";
+
+          top.appendChild(name);
+          top.appendChild(view);
+
+          const headline = document.createElement("div");
+          headline.className = "line";
+          headline.textContent = app.headline || "";
+
+          const applied = document.createElement("div");
+          applied.className = "small mt-2";
+          applied.textContent = "Applied: " + (app.created_at || "");
+
+          card.appendChild(top);
+          if (app.headline) card.appendChild(headline);
+          card.appendChild(applied);
+
+          card.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", String(app.id));
+            e.dataTransfer.effectAllowed = "move";
+          });
+
+          return card;
+        }
+
+        function buildColumns(data) {
+          clearColumns();
+
+          STATUSES.forEach((st, idx) => {
+            const col = document.createElement("div");
+            col.className = "kb-col";
+
+            const header = document.createElement("div");
+            header.className = "kb-col-header";
+
+            const title = document.createElement("div");
+            title.className = "kb-col-title";
+            title.textContent = st.label;
+
+            const count = document.createElement("div");
+            count.className = "kb-count";
+            const items = (data.columns && data.columns[st.key]) ? data.columns[st.key] : [];
+            count.textContent = String(items.length);
+
+            header.appendChild(title);
+            header.appendChild(count);
+
+            const drop = document.createElement("div");
+            drop.className = "kb-dropzone";
+            drop.dataset.status = st.key;
+
+            if (!items.length) {
+              const empty = document.createElement("div");
+              empty.className = "kb-empty";
+              empty.textContent = "Drop here";
+              drop.appendChild(empty);
+            } else {
+              items.forEach(app => {
+                drop.appendChild(makeApplicantCard(app));
+              });
+            }
+
+            drop.addEventListener("dragover", function (e) {
+              e.preventDefault();
+              drop.classList.add("drag-over");
+            });
+            drop.addEventListener("dragleave", function () {
+              drop.classList.remove("drag-over");
+            });
+            drop.addEventListener("drop", function (e) {
+              e.preventDefault();
+              drop.classList.remove("drag-over");
+              const appId = e.dataTransfer.getData("text/plain");
+              if (!appId) return;
+
+              const movingCard = document.querySelector('.kb-card[data-app-id="' + appId + '"]');
+              if (!movingCard) return;
+
+              const prevZone = movingCard.parentElement;
+              const prevStatus = prevZone ? prevZone.dataset.status : null;
+              const newStatus = drop.dataset.status;
+              if (!newStatus || prevStatus === newStatus) return;
+
+              const prevEmpty = prevZone ? prevZone.querySelector(".kb-empty") : null;
+              if (prevEmpty) prevEmpty.remove();
+
+              const targetEmpty = drop.querySelector(".kb-empty");
+              if (targetEmpty) targetEmpty.remove();
+
+              drop.appendChild(movingCard);
+
+              const prevCards = prevZone ? prevZone.querySelectorAll(".kb-card").length : 0;
+              if (prevZone && prevCards === 0) {
+                const empty = document.createElement("div");
+                empty.className = "kb-empty";
+                empty.textContent = "Drop here";
+                prevZone.appendChild(empty);
+              }
+
+              const prevCol = prevZone ? prevZone.closest(".kb-col") : null;
+              const newCol = drop.closest(".kb-col");
+              if (prevCol) {
+                const prevCountEl = prevCol.querySelector(".kb-count");
+                if (prevCountEl) prevCountEl.textContent = String(prevZone.querySelectorAll(".kb-card").length);
+              }
+              if (newCol) {
+                const newCountEl = newCol.querySelector(".kb-count");
+                if (newCountEl) newCountEl.textContent = String(drop.querySelectorAll(".kb-card").length);
+              }
+
+              updateStatus(appId, newStatus);
+            });
+
+            col.appendChild(header);
+            col.appendChild(drop);
+
+            columnsEl.appendChild(col);
+
+            if (idx !== STATUSES.length - 1) {
+              const hr = document.createElement("hr");
+              hr.className = "kb-row-split";
+              columnsEl.appendChild(hr);
+            }
+          });
+        }
+
+        function loadJobsSelect(jobs) {
+          while (jobFilterEl.options.length > 1) jobFilterEl.remove(1);
+          (jobs || []).forEach(j => {
+            const opt = document.createElement("option");
+            opt.value = String(j.id);
+            opt.textContent = j.title;
+            jobFilterEl.appendChild(opt);
+          });
+        }
+
+        function fetchPipeline() {
+          const jobVal = jobFilterEl.value || "all";
+          const url = "{% url 'recruiter_pipeline_data' %}?job=" + encodeURIComponent(jobVal);
+          fetch(url, { credentials: "same-origin" })
+            .then(r => r.json())
+            .then(data => {
+              loadJobsSelect(data.jobs);
+              buildColumns(data);
+            })
+            .catch(() => {});
+        }
+
+        function updateStatus(appId, statusKey) {
+          const urlTpl = "{% url 'update_application_status_ajax' 0 %}";
+          const url = urlTpl.replace("/0/", "/" + appId + "/");
+          const body = new URLSearchParams();
+          body.append("status", statusKey);
+
+          fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: body.toString(),
+          }).then(() => {}).catch(() => {});
+        }
+
+        jobFilterEl.addEventListener("change", fetchPipeline);
+
+        fetchPipeline();
+      })();
+    </script>
+
   {% else %}
-    <div class="text-muted fst-italic">No candidates found.</div>
+    <div class="text-muted">No candidates match your search. Try adjusting filters.</div>
   {% endif %}
 </div>
 {% endblock %}
