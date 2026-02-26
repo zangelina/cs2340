@@ -47,4 +47,8 @@ urlpatterns = [
     path("map/", views.job_map, name="job_map"),
     path("recommended/", views.recommended_jobs, name="recommended_jobs"),
     path("recruiter/recommended/", views.recommended_candidates, name="recommended_candidates"),
+
+    # Recruiter pipeline
+    path("recruiter/pipeline/data/", views.recruiter_pipeline_data, name="recruiter_pipeline_data"),
+    path("recruiter/pipeline/applications/<int:app_id>/status/", views.update_application_status_ajax, name="update_application_status_ajax"),
 ]
