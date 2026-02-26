@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
+from django.http import JsonResponse
 
 from .forms import (
     JobSeekerRegistrationForm,
@@ -352,6 +353,64 @@ def recruiter_candidate_search(request):
         "profiles": profiles, "skills": skills_q, "location": location_q, "projects": projects_q,
     })
 
+# ── Recruiter: applicant pipeline───────────
+@login_required
+def recruiter_pipeline_data(request):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    jobs = JobPosting.objects.filter(recruiter=request.user).order_by("-created_at")
+    selected_job_id = request.GET.get("job", "").strip()
+    job_qs = jobs
+    if selected_job_id.isdigit():
+        job_qs = job_qs.filter(pk=int(selected_job_id))
+    apps = Application.objects.filter(job__in=job_qs).select_related("job", "applicant").order_by("-created_at")
+
+    seeker_profiles = JobSeekerProfile.objects.filter(user__in=[a.applicant for a in apps]).select_related("user")
+    seeker_map = {sp.user_id: sp for sp in seeker_profiles}
+    columns = {k: [] for k, _ in Application.Status.choices}
+
+    for a in apps:
+        sp = seeker_map.get(a.applicant_id)
+        headline = ""
+        if sp and getattr(sp, "show_headline", False) and getattr(sp, "headline", ""):
+            headline = sp.headline
+
+        columns[a.status].append({
+            "id": a.id,
+            "job_id": a.job_id,
+            "job_title": a.job.title,
+            "username": a.applicant.username,
+            "headline": headline,
+            "created_at": a.created_at.strftime("%Y-%m-%d"),
+            "view_url": reverse_lazy("view_candidate", kwargs={"user_id": a.applicant_id}),
+        })
+
+    return JsonResponse({
+        "jobs": [{"id": j.id, "title": j.title} for j in jobs],
+        "selected_job": int(selected_job_id) if selected_job_id.isdigit() else None,
+        "columns": columns,
+        "statuses": [{"key": k, "label": v} for k, v in Application.Status.choices],
+    })
+
+@login_required
+def update_application_status_ajax(request, app_id):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    app = get_object_or_404(Application, pk=app_id, job__recruiter=request.user)
+    if request.method != "POST":
+        return JsonResponse({"error": "method_not_allowed"}, status=405)
+    new_status = request.POST.get("status", "")
+    if new_status not in dict(Application.Status.choices):
+        return JsonResponse({"error": "invalid_status"}, status=400)
+    app.status = new_status
+    app.save()
+
+    return JsonResponse({
+        "ok": True,
+        "app_id": app.id,
+        "status": app.status,
+        "status_label": app.get_status_display(),
+    })
 
 # ── Job Seeker Profile ────────────────────────────────
 
@@ -540,4 +599,5 @@ def recommended_candidates(request):
         "job_skills": job_skills,
         "candidates": candidates,
     })
+
 
