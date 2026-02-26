@@ -280,8 +280,13 @@ def view_candidate(request, user_id):
         messages.info(request, "This profile is private.")
         return redirect("home")
 
+    show_featured = bool(is_applicant or getattr(profile, "show_featured", False))
+
     return render(request, "jobs/view_candidate.html", {
-        "candidate": candidate, "profile": profile, "is_applicant": is_applicant,
+        "candidate": candidate,
+        "profile": profile,
+        "is_applicant": is_applicant,
+        "show_featured": show_featured,
     })
 
 
@@ -535,3 +540,4 @@ def recommended_candidates(request):
         "job_skills": job_skills,
         "candidates": candidates,
     })
+
