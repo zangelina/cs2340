@@ -11,8 +11,6 @@
   </div>
   {% endif %}
 
-  {% with show_featured=is_applicant or profile.show_featured %}
-
   <div class="row g-4">
 
     <!-- Left: main profile info -->
@@ -168,7 +166,6 @@
           </a>
         {% endif %}
 
-        <!-- Report button -->
         <div class="pt-2" style="border-top:1px solid var(--border);">
           <a href="{% url 'report_profile' candidate.pk %}" class="text-muted small text-decoration-none d-inline-flex align-items-center gap-1"
              style="opacity:.6;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">
@@ -190,7 +187,5 @@
     </a>
   </div>
   {% endif %}
-
-  {% endwith %}
 </div>
 {% endblock %}
