@@ -485,4 +485,53 @@ def recommended_jobs(request):
 
     return render(request, "jobs/recommended_jobs.html", {
         "jobs": recommended, "skills_list": skills_list,
+
+    })
+    
+# ── Recommend candidates ─────────────────────────────
+@login_required
+def recommended_candidates(request):
+    if not request.user.is_recruiter():
+        return redirect("home")
+
+    postings = JobPosting.objects.filter(recruiter=request.user, is_active=True)
+    selected_job = None
+    job_id = request.GET.get("job")
+    if job_id:
+        try:
+            selected_job = postings.get(pk=int(job_id))
+        except (ValueError, JobPosting.DoesNotExist):
+            selected_job = None
+    if selected_job is None:
+        selected_job = postings.first()
+
+    job_skills = []
+    if selected_job:
+        job_skills = [s.strip() for s in (selected_job.skills or "").split(",") if s.strip()]
+
+    seeker_profiles = JobSeekerProfile.objects.select_related("user").filter(
+        is_public=True,
+        user__role=CustomUser.Role.JOB_SEEKER,
+    )
+    
+    candidates = []
+    if job_skills:
+        job_skill_set = {s.lower() for s in job_skills}
+        for p in seeker_profiles:
+            if not p.show_skills:
+                continue
+            cand_skills = [s.strip() for s in (p.skills or "").split(",") if s.strip()]
+            overlap = sorted({s for s in cand_skills if s.lower() in job_skill_set}, key=lambda x: x.lower())
+            if overlap:
+                p.overlap_skills = overlap
+                p.overlap_count = len(overlap)
+                candidates.append(p)
+
+        candidates.sort(key=lambda p: (-getattr(p, "overlap_count", 0), p.user.username.lower()))
+
+    return render(request, "jobs/recommended_candidates.html", {
+        "postings": postings,
+        "selected_job": selected_job,
+        "job_skills": job_skills,
+        "candidates": candidates,
     })
