@@ -46,4 +46,5 @@ urlpatterns = [
     # Map + Recommendations
     path("map/", views.job_map, name="job_map"),
     path("recommended/", views.recommended_jobs, name="recommended_jobs"),
+    path("recruiter/recommended/", views.recommended_candidates, name="recommended_candidates"),
 ]
