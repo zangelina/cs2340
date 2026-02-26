@@ -1,0 +1,92 @@
+{% extends "jobs/base.html" %}
+{% block title %}Recommended Candidates{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="fw-bold mb-4">Recommended Candidates</h2>
+
+  <div class="bg-white p-4 rounded-4 border shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="fw-semibold mb-2">Posting skills</h5>
+        {% if selected_job %}
+          <div class="text-secondary small mb-2">
+            {{ selected_job.title }} · {{ selected_job.company }}
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="get" class="d-flex align-items-center gap-2">
+        <label class="fw-semibold text-secondary mb-0" for="job">Job:</label>
+        <select id="job" name="job" class="form-select" style="min-width: 320px;" onchange="this.form.submit()">
+          {% if postings %}
+            {% for j in postings %}
+              <option value="{{ j.pk }}" {% if selected_job and j.pk == selected_job.pk %}selected{% endif %}>
+                {{ j.title }} · {{ j.company }}
+              </option>
+            {% endfor %}
+          {% else %}
+            <option value="">No active postings</option>
+          {% endif %}
+        </select>
+      </form>
+    </div>
+
+    {% if job_skills %}
+      <div class="mt-3">
+        {% for s in job_skills %}
+          <span class="badge rounded-pill text-bg-light me-1 mb-1">{{ s }}</span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-secondary mb-0 mt-3">
+        This job posting has no skills listed yet. Add skills to get better recommendations.
+      </p>
+    {% endif %}
+  </div>
+
+  {% if candidates %}
+    {% for p in candidates %}
+      <a href="{% url 'view_candidate' p.user.pk %}" class="text-decoration-none text-dark">
+        <div class="bg-white rounded-4 p-4 border card-hover mb-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="fw-semibold mb-1">
+                {{ p.user.first_name }} {{ p.user.last_name }}
+                {% if not p.user.first_name and not p.user.last_name %}{{ p.user.username }}{% endif %}
+              </h5>
+              <div class="text-secondary">
+                {% if p.show_headline and p.headline %}{{ p.headline }}{% else %}Candidate profile{% endif %}
+              </div>
+            </div>
+
+            <div class="text-end text-secondary small">
+              {{ p.overlap_count }} matching skill{{ p.overlap_count|pluralize }}
+            </div>
+          </div>
+
+          <div class="mt-2">
+            {% if p.overlap_skills %}
+              {% for skill in p.overlap_skills %}
+                <span class="badge rounded-pill text-bg-light">{{ skill }}</span>
+              {% endfor %}
+            {% endif %}
+
+            {% if p.visa_required %}
+              <span class="badge rounded-pill text-bg-info">Visa required</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  {% else %}
+    {% if postings and job_skills %}
+      <p class="text-secondary">No recommended candidates found based on current public skills.</p>
+    {% elif postings and not job_skills %}
+      <p class="text-secondary">Add skills to the selected posting to receive recommendations.</p>
+    {% else %}
+      <p class="text-secondary">You don’t have any active job postings yet.</p>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
