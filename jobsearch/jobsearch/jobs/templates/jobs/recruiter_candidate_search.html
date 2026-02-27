@@ -41,30 +41,35 @@
       <div class="text-muted small">{{ profiles|length }} candidate{{ profiles|length|pluralize }}</div>
     </div>
 
-    <div class="vstack gap-3">
+    <div>
       {% for p in profiles %}
-        <div class="card shadow-sm border-0">
-          <div class="card-body p-4">
+        <a href="{% url 'view_candidate' p.user.pk %}" class="text-decoration-none text-dark">
+          <div class="bg-white rounded-4 p-4 border card-hover mb-3">
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <div class="fw-bold fs-5">{{ p.user.username }}</div>
-                <div class="text-muted">{{ p.headline|default:"" }}</div>
+                <h5 class="fw-semibold mb-1">
+                  {{ p.user.first_name }} {{ p.user.last_name }}
+                  {% if not p.user.first_name and not p.user.last_name %}{{ p.user.username }}{% endif %}
+                </h5>
+                <div class="text-secondary">
+                  {% if p.show_headline and p.headline %}{{ p.headline }}{% else %}Candidate profile{% endif %}
+                </div>
               </div>
-              <a class="btn btn-outline-primary btn-sm" href="{% url 'report_profile' p.user.id %}">View</a>
             </div>
-
-            <div class="mt-3">
-              <div class="text-muted small fw-bold mb-2">SKILLS</div>
-              <div class="d-flex flex-wrap gap-2">
+            <div class="mt-2">
+              {% if p.show_skills %}
                 {% for s in p.skills_list %}
-                  <span class="js-badge">{{ s }}</span>
+                  <span class="badge rounded-pill text-bg-light">{{ s }}</span>
                 {% empty %}
-                  <span class="text-muted small">No skills listed.</span>
+                  <span class="text-secondary small">No skills listed.</span>
                 {% endfor %}
-              </div>
+              {% endif %}
+              {% if p.visa_required %}
+                <span class="badge rounded-pill text-bg-info">Visa required</span>
+              {% endif %}
             </div>
           </div>
-        </div>
+        </a>
       {% endfor %}
     </div>
 
@@ -383,3 +388,4 @@
   {% endif %}
 </div>
 {% endblock %}
+
