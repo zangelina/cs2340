@@ -283,3 +283,36 @@ class ProfileReport(models.Model):
 
     def __str__(self):
         return f"Report on {self.profile.user.username} by {self.reported_by.username}"
+
+
+class Conversation(models.Model):
+    recruiter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="convos_as_recruiter"
+    )
+    job_seeker = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="convos_as_seeker"
+    )
+    application = models.ForeignKey(
+        "Application", null=True, blank=True, on_delete=models.SET_NULL, related_name="conversations"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("recruiter", "job_seeker", "application")
+
+    def __str__(self):
+        return f"{self.recruiter} ↔ {self.job_seeker}"
+
+
+class Message(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Msg by {self.sender} @ {self.created_at}"

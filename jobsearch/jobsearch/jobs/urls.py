@@ -51,4 +51,10 @@ urlpatterns = [
     # Recruiter pipeline
     path("recruiter/pipeline/data/", views.recruiter_pipeline_data, name="recruiter_pipeline_data"),
     path("recruiter/pipeline/applications/<int:app_id>/status/", views.update_application_status_ajax, name="update_application_status_ajax"),
-]
+
+    path("inbox/", views.inbox, name="inbox"),
+    path("inbox/<int:convo_id>/", views.conversation_detail, name="conversation_detail"),
+    path("inbox/start/<int:application_id>/", views.start_conversation, name="start_conversation"),
+    path("inbox/start/candidate/<int:user_id>/", views.start_conversation_with_candidate, name="start_conversation_with_candidate"),
+    path("inbox/start/candidate/<int:user_id>/", views.start_conversation_with_candidate, name="start_conversation_with_candidate"),
+    ]

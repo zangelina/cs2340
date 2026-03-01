@@ -6,6 +6,9 @@ from django.db.models import Q
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.http import JsonResponse
+from .models import Conversation, Message, Application
+from .forms import MessageForm
+from django.http import HttpResponseForbidden
 
 from .forms import (
     JobSeekerRegistrationForm,
@@ -600,4 +603,103 @@ def recommended_candidates(request):
         "candidates": candidates,
     })
 
+@login_required
+def inbox(request):
+    user = request.user
+    if user.is_recruiter():
+        convos = Conversation.objects.filter(recruiter=user).order_by("-updated_at")
+    elif user.is_job_seeker():
+        convos = Conversation.objects.filter(job_seeker=user).order_by("-updated_at")
+    else:
+        convos = Conversation.objects.none()
+    return render(request, "jobs/inbox.html", {"convos": convos})
 
+
+@login_required
+def conversation_detail(request, convo_id):
+    convo = get_object_or_404(Conversation, id=convo_id)
+
+    if request.user != convo.recruiter and request.user != convo.job_seeker:
+        return HttpResponseForbidden("Not allowed.")
+
+    if request.method == "POST":
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            Message.objects.create(
+                conversation=convo,
+                sender=request.user,
+                body=form.cleaned_data["body"]
+            )
+            convo.save()
+            return redirect("conversation_detail", convo_id=convo.id)
+    else:
+        form = MessageForm()
+
+    return render(
+        request,
+        "jobs/conversation_detail.html",
+        {"convo": convo, "messages": convo.messages.all(), "form": form},
+    )
+
+
+@login_required
+def start_conversation(request, application_id):
+    # recruiter starts convo from application
+    if not request.user.is_recruiter():
+        return redirect("home")
+
+    app = get_object_or_404(Application, id=application_id)
+
+    # safety: recruiter must own the job posting
+    if app.job.recruiter != request.user:
+        return HttpResponseForbidden("Not allowed.")
+
+    convo, _ = Conversation.objects.get_or_create(
+        recruiter=request.user,
+        job_seeker=app.applicant,   
+        application=app            
+    )
+    return redirect("conversation_detail", convo_id=convo.id)
+
+@login_required
+def start_conversation_with_candidate(request, user_id):
+    if not request.user.is_recruiter():
+        return redirect("home")
+
+    candidate = get_object_or_404(CustomUser, pk=user_id, role=CustomUser.Role.JOB_SEEKER)
+
+    # respect privacy: only allow if public OR already applied to this recruiter
+    profile = JobSeekerProfile.objects.filter(user=candidate).first()
+    is_applicant = Application.objects.filter(applicant=candidate, job__recruiter=request.user).exists()
+    if (not is_applicant) and profile and (not profile.is_public):
+        return HttpResponseForbidden("This profile is private.")
+
+    convo, _ = Conversation.objects.get_or_create(
+        recruiter=request.user,
+        job_seeker=candidate,
+        defaults={"application": None},
+    )
+    return redirect("conversation_detail", convo_id=convo.id)
+
+@login_required
+def start_conversation_with_candidate(request, user_id):
+    if not request.user.is_recruiter():
+        return redirect("home")
+
+    candidate = get_object_or_404(CustomUser, pk=user_id, role=CustomUser.Role.JOB_SEEKER)
+
+    # Privacy rule:
+    # allow if candidate is public OR has applied to this recruiter's job
+    profile = JobSeekerProfile.objects.filter(user=candidate).first()
+    is_applicant = Application.objects.filter(applicant=candidate, job__recruiter=request.user).exists()
+
+    if profile and (not profile.is_public) and (not is_applicant):
+        return HttpResponseForbidden("This profile is private.")
+
+    # IMPORTANT: only works if Conversation.application is nullable (null=True, blank=True)
+    convo, _ = Conversation.objects.get_or_create(
+        recruiter=request.user,
+        job_seeker=candidate,
+        defaults={"application": None},
+    )
+    return redirect("conversation_detail", convo_id=convo.id)

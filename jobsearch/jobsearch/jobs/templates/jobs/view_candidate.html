@@ -34,6 +34,18 @@
             {% if is_applicant or profile.show_email %}
               <div class="text-muted small">{{ candidate.email }}</div>
             {% endif %}
+            
+            <a class="btn btn-outline-secondary btn-sm"
+              href="{% url 'start_conversation_with_candidate' candidate.pk %}">
+              Message
+            </a>
+
+            <a class="btn btn-outline-primary btn-sm"
+              href="mailto:{{ candidate.email }}?subject={{ 'Regarding your profile'|urlencode }}">
+              Email
+            </a>
+          </div>
+
             {% if is_applicant or profile.show_headline %}
               {% if profile.headline %}<p class="mb-0 mt-1">{{ profile.headline }}</p>{% endif %}
             {% endif %}

@@ -150,3 +150,9 @@ class ProfileReportForm(forms.ModelForm):
                 "placeholder": "Any additional context (optional)",
             }),
         }
+
+class MessageForm(forms.Form):
+    body = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Type a message..."}),
+        label=""
+    )

@@ -25,6 +25,17 @@
           <a href="{% url 'view_candidate' app.applicant.pk %}" class="text-decoration-none fw-bold">
             {{ app.applicant.username }}
           </a>
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-secondary btn-sm"
+              href="{% url 'start_conversation' app.id %}">
+              Message
+            </a>
+
+            <a class="btn btn-outline-primary btn-sm"
+              href="mailto:{{ app.applicant.email }}?subject={{ 'Regarding your application'|urlencode }}">
+              Email
+            </a>
+          </div>
           <div class="text-muted small">Applied {{ app.created_at|date:"M j, Y" }}</div>
           {% if app.note %}
             <div class="text-muted small mt-1 fst-italic">"{{ app.note|truncatewords:20 }}"</div>
