@@ -14,6 +14,7 @@
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
       <form method="get" class="row g-3 align-items-end">
+        {% csrf_token %}
         <div class="col-12 col-md-4">
           <label class="form-label text-muted small">Skills</label>
           <input type="text" name="skills" value="{{ request.GET.skills }}" class="form-control" placeholder="e.g., python, django">
@@ -26,10 +27,22 @@
           <label class="form-label text-muted small">Projects</label>
           <input type="text" name="projects" value="{{ request.GET.projects }}" class="form-control" placeholder="e.g., portfolio, capstone">
         </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label text-muted small">Saved Search Name (optional)</label>
+          <input type="text" name="save_name" class="form-control" placeholder="e.g., Atlanta Python interns">
+        </div>
 
         <div class="col-12 d-flex gap-2 justify-content-end">
           <a href="{% url 'recruiter_candidate_search' %}" class="btn btn-outline-secondary">Clear</a>
           <button type="submit" class="btn btn-primary">Search</button>
+        
+          <button type="submit"
+                  formmethod="post"
+                  name="action"
+                  value="save_search"
+                  class="btn btn-outline-primary">
+            Save Search
+          </button>
         </div>
       </form>
     </div>
