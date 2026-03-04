@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.utils import timezone
 
 
 # ── Custom User ───────────────────────────────────────
@@ -316,3 +317,46 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Msg by {self.sender} @ {self.created_at}"
+
+
+class SavedCandidateSearch(models.Model):
+    recruiter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_candidate_searches"
+    )
+
+    name = models.CharField(max_length=80, default="Saved search")
+
+    skills = models.CharField(max_length=255, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    projects = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+
+    # store last seen candidate user IDs so we can detect new matches
+    last_seen_candidate_ids = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"{self.recruiter.username}: {self.name}"
+
+
+class CandidateMatchNotification(models.Model):
+    recruiter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="candidate_match_notifications"
+    )
+    saved_search = models.ForeignKey(
+        SavedCandidateSearch,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Notif({self.recruiter.username}) {self.message[:30]}"

@@ -10,6 +10,20 @@ from .models import Conversation, Message, Application
 from .forms import MessageForm
 from django.http import HttpResponseForbidden
 
+#Neal
+from django.utils import timezone
+from .models import SavedCandidateSearch, CandidateMatchNotification
+
+#Neal
+def _result_user_ids(results):
+    ids = []
+    for r in results:
+        if hasattr(r, "id") and not hasattr(r, "user_id"):
+            ids.append(r.id)
+        elif hasattr(r, "user_id"):
+            ids.append(r.user_id)
+    return [i for i in ids if i is not None]
+
 from .forms import (
     JobSeekerRegistrationForm,
     RecruiterRegistrationForm,
@@ -334,27 +348,93 @@ def recruiter_candidate_search(request):
     if not request.user.is_recruiter():
         return redirect("home")
 
+    # --- helper to run the exact same filtering logic for any (skills, location, projects) ---
+    def filter_profiles(skills_text: str, location_text: str, projects_text: str):
+        qs = JobSeekerProfile.objects.filter(is_public=True).select_related("user")
+
+        if skills_text:
+            q = Q()
+            for term in skills_text.split(","):
+                term = term.strip()
+                if term:
+                    q |= Q(skills__icontains=term)
+            qs = qs.filter(q, show_skills=True)
+
+        if location_text:
+            qs = qs.filter(location__icontains=location_text, show_location=True)
+
+        if projects_text:
+            qs = qs.filter(projects__icontains=projects_text, show_projects=True)
+
+        return qs
+
+    # --- read current search inputs (GET for searching on this page) ---
     skills_q = request.GET.get("skills", "").strip()
     location_q = request.GET.get("location", "").strip()
     projects_q = request.GET.get("projects", "").strip()
 
-    profiles = JobSeekerProfile.objects.filter(is_public=True).select_related("user")
+    # compute current results shown on page
+    profiles = filter_profiles(skills_q, location_q, projects_q)
 
-    if skills_q:
-        q = Q()
-        for term in skills_q.split(","):
-            term = term.strip()
-            if term:
-                q |= Q(skills__icontains=term)
-        profiles = profiles.filter(q, show_skills=True)
-    if location_q:
-        profiles = profiles.filter(location__icontains=location_q, show_location=True)
-    if projects_q:
-        profiles = profiles.filter(projects__icontains=projects_q, show_projects=True)
+    # --- Save Search (POST) ---
+    # Your template must submit: action=save_search, plus skills/location/projects fields.
+    if request.method == "POST" and request.POST.get("action") == "save_search":
+        name = (request.POST.get("save_name") or "Saved search").strip()[:80]
 
-    return render(request, "jobs/recruiter_candidate_search.html", {
-        "profiles": profiles, "skills": skills_q, "location": location_q, "projects": projects_q,
-    })
+        # pull values from POST if present, otherwise fall back to current GET query
+        skills_to_save = (request.POST.get("skills") or skills_q).strip()
+        location_to_save = (request.POST.get("location") or location_q).strip()
+        projects_to_save = (request.POST.get("projects") or projects_q).strip()
+
+        # compute matches for the saved search so we can store "last seen"
+        saved_matches = filter_profiles(skills_to_save, location_to_save, projects_to_save)
+
+        SavedCandidateSearch.objects.create(
+            recruiter=request.user,
+            name=name,
+            skills=skills_to_save,
+            location=location_to_save,
+            projects=projects_to_save,
+            last_checked_at=timezone.now(),
+            last_seen_candidate_ids=_result_user_ids(saved_matches),
+        )
+        messages.success(request, f"Saved search '{name}'")
+
+    # --- Check saved searches for new matches + create notifications ---
+    saved_searches = SavedCandidateSearch.objects.filter(recruiter=request.user).order_by("-created_at")
+
+    for s in saved_searches:
+        current_results = filter_profiles(s.skills or "", s.location or "", s.projects or "")
+        current_ids = set(_result_user_ids(current_results))
+        old_ids = set(s.last_seen_candidate_ids or [])
+
+        new_ids = current_ids - old_ids
+        if new_ids:
+            CandidateMatchNotification.objects.create(
+                recruiter=request.user,
+                saved_search=s,
+                message=f"New matches for '{s.name}': {len(new_ids)} candidate(s)"
+            )
+            s.last_seen_candidate_ids = list(current_ids)
+            s.last_checked_at = timezone.now()
+            s.save(update_fields=["last_seen_candidate_ids", "last_checked_at"])
+
+    unread_count = CandidateMatchNotification.objects.filter(
+        recruiter=request.user,
+        is_read=False
+    ).count()
+
+    # --- CONTEXT (this is what "add to context" means) ---
+    context = {
+        "profiles": profiles,
+        "skills": skills_q,
+        "location": location_q,
+        "projects": projects_q,
+        "saved_searches": saved_searches,
+        "unread_count": unread_count,
+    }
+
+    return render(request, "jobs/recruiter_candidate_search.html", context)
 
 # ── Recruiter: applicant pipeline───────────
 @login_required
