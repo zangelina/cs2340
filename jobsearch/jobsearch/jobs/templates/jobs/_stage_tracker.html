@@ -1,0 +1,89 @@
+{# jobs/_stage_tracker.html — include with current=app.status #}
+
+<div class="stage-tracker mt-2">
+
+  {# Applied #}
+  <div class="stage-step
+    {% if current == 'applied' %}s-current
+    {% elif current == 'review' or current == 'interview' or current == 'offer' or current == 'closed' %}s-done
+    {% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">Applied</div>
+  </div>
+
+  <div class="stage-conn {% if current == 'review' or current == 'interview' or current == 'offer' %}conn-active{% endif %}"></div>
+
+  {# In Review #}
+  <div class="stage-step
+    {% if current == 'review' %}s-current
+    {% elif current == 'interview' or current == 'offer' %}s-done
+    {% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">In Review</div>
+  </div>
+
+  <div class="stage-conn {% if current == 'interview' or current == 'offer' %}conn-active{% endif %}"></div>
+
+  {# Interview #}
+  <div class="stage-step
+    {% if current == 'interview' %}s-current
+    {% elif current == 'offer' %}s-done
+    {% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">Interview</div>
+  </div>
+
+  <div class="stage-conn {% if current == 'offer' %}conn-green{% endif %}"></div>
+
+  {# Offer #}
+  <div class="stage-step {% if current == 'offer' %}s-offer{% endif %}">
+    <div class="stage-node {% if current == 'offer' %}node-offer{% endif %}">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl {% if current == 'offer' %}lbl-offer{% endif %}">Offer</div>
+  </div>
+
+</div>
+
+<style>
+.stage-tracker  { display:flex; align-items:center; margin-top:14px; }
+.stage-step     { flex:1; display:flex; flex-direction:column; align-items:center; }
+.stage-conn     { flex:1; height:2px; background:var(--border); margin-bottom:20px; }
+.conn-active    { background:var(--brand); }
+.conn-green     { background:#10b981; }
+.stage-node {
+  width:20px; height:20px; border-radius:50%;
+  border:2.5px solid var(--border); background:var(--card);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; z-index:1; flex-shrink:0;
+}
+.stage-tick          { display:none; width:10px; height:10px; }
+.s-done .stage-node  { background:var(--brand); border-color:var(--brand); }
+.s-done .stage-tick  { display:block; }
+.s-current .stage-node { border-color:var(--brand); box-shadow:0 0 0 4px rgba(26,86,219,.15); }
+.node-offer          { background:#10b981 !important; border-color:#10b981 !important; }
+.node-offer .stage-tick { display:block; }
+.s-offer .stage-tick { display:block; }
+.stage-lbl  {
+  font-size:.58rem; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.06em;
+  margin-top:4px; text-align:center; white-space:nowrap;
+}
+.s-done .stage-lbl    { color:var(--brand); }
+.s-current .stage-lbl { color:var(--brand); }
+.lbl-offer            { color:#059669 !important; }
+</style>

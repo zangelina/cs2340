@@ -26,6 +26,9 @@ urlpatterns = [
     path("recruiter/applications/<int:app_id>/status/", views.update_application_status, name="update_application_status"),
     path("recruiter/candidate/<int:user_id>/", views.view_candidate, name="view_candidate"),
     path("recruiter/candidates/", views.recruiter_candidate_search, name="recruiter_candidate_search"),
+    path("recruiter/profile/", views.recruiter_profile, name="recruiter_profile"),
+    path("recruiter/profile/edit/", views.recruiter_profile_edit, name="recruiter_profile_edit"),
+
 
     # Job Seeker Profile
     path("profile/", views.seeker_profile, name="seeker_profile"),
@@ -57,4 +60,8 @@ urlpatterns = [
     path("inbox/start/<int:application_id>/", views.start_conversation, name="start_conversation"),
     path("inbox/start/candidate/<int:user_id>/", views.start_conversation_with_candidate, name="start_conversation_with_candidate"),
     path("inbox/start/candidate/<int:user_id>/", views.start_conversation_with_candidate, name="start_conversation_with_candidate"),
+
+    path("recruiter/pipeline/", views.recruiter_pipeline, name="recruiter_pipeline"),
+    path("applications/<int:pk>/status/", views.update_application_status_ajax, name="update_application_status_ajax"),
+    path("api/stats/today/", views.stats_today, name="stats_today"),
     ]

@@ -44,6 +44,11 @@ class JobSeekerProfile(models.Model):
     )
     headline = models.CharField(max_length=200, blank=True)
     bio = models.TextField(blank=True, help_text="Short summary about yourself")
+    resume = models.FileField(
+    upload_to="resumes/",
+    blank=True,
+    null=True,
+    help_text="PDF or Word resume")
     location = models.CharField(max_length=200, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     website = models.URLField(blank=True)
@@ -93,6 +98,7 @@ class JobSeekerProfile(models.Model):
     # Privacy toggles
     is_public = models.BooleanField(default=True)
     show_photo = models.BooleanField(default=True)
+    show_resume = models.BooleanField(default=True)
     show_headline = models.BooleanField(default=True)
     show_bio = models.BooleanField(default=True)
     show_skills = models.BooleanField(default=True)

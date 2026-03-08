@@ -3,14 +3,132 @@
 
 {% block content %}
 
+<!-- ══ LIVE STATS TICKER ══════════════════════════════════════════════ -->
+<div id="statsBar" class="stats-bar">
+  <div class="stats-bar-inner">
+    <div class="stats-item">
+      <span class="stats-icon">📨</span>
+      <span class="stats-label">Applications today</span>
+      <span class="stats-value" id="stat-apps">—</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item">
+      <span class="stats-icon">🎉</span>
+      <span class="stats-label">Offers sent today</span>
+      <span class="stats-value" id="stat-offers">—</span>
+    </div>
+    <div class="stats-divider"></div>
+    <div class="stats-item skills-item">
+      <span class="stats-icon">🔥</span>
+      <span class="stats-label">Top skills in demand</span>
+      <span class="stats-value" id="stat-skills">—</span>
+    </div>
+    <div class="stats-pulse" title="Live data"></div>
+  </div>
+</div>
+
+<style>
+.stats-bar {
+  background: var(--card);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 24px;
+  position: sticky;
+  top: 56px;   /* sits just below the navbar */
+  z-index: 900;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.stats-bar-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 40px;
+  overflow: hidden;
+}
+.stats-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 20px;
+  white-space: nowrap;
+}
+.stats-icon  { font-size: .85rem; }
+.stats-label { font-size: .72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.stats-value {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--brand);
+  min-width: 20px;
+  transition: opacity .3s;
+}
+.stats-value.updating { opacity: 0; }
+.stats-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.skills-item { flex: 1; overflow: hidden; }
+#stat-skills { overflow: hidden; text-overflow: ellipsis; }
+.stats-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #10b981;
+  margin-left: auto;
+  margin-right: 4px;
+  flex-shrink: 0;
+  animation: pulseDot 2s ease infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+}
+@media (max-width: 640px) {
+  .skills-item { display: none; }
+  .stats-bar { top: 52px; }
+}
+</style>
+
+<script>
+(function() {
+  function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('updating');
+    setTimeout(() => { el.textContent = val; el.classList.remove('updating'); }, 300);
+  }
+
+  async function fetchStats() {
+    try {
+      const res  = await fetch('/api/stats/today/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await res.json();
+      setVal('stat-apps',    data.applications_today ?? '—');
+      setVal('stat-offers',  data.offers_today       ?? '—');
+      setVal('stat-skills',  data.top_skills?.join(' · ') ?? '—');
+    } catch(e) {
+      // silently fail — stats are decorative
+    }
+  }
+
+  fetchStats();
+  setInterval(fetchStats, 30000); // refresh every 30s
+})();
+</script>
+
+
 {% if user.is_authenticated and user.is_recruiter %}
 <div class="container pt-4">
-  <div class="js-card d-flex justify-content-between align-items-center" style="background:linear-gradient(135deg,var(--brand-light),#f0f4ff);border-color:transparent;">
+  <div class="js-card d-flex justify-content-between align-items-center"
+       style="background:linear-gradient(135deg,var(--brand-light),hsl(var(--brand-h,220),60%,95%));border-color:transparent;">
     <div>
       <div class="fw-bold" style="color:var(--brand);">Recruiter Mode</div>
       <div class="text-muted small">Manage your job postings and view applicants.</div>
     </div>
-    <a href="{% url 'recruiter_dashboard' %}" class="btn btn-brand btn-sm">Go to Dashboard</a>
+    <div class="d-flex gap-2">
+      <a href="{% url 'recruiter_profile' %}" class="btn btn-ghost btn-sm">My Profile</a>
+      <a href="{% url 'recruiter_dashboard' %}" class="btn btn-brand btn-sm">Dashboard →</a>
+    </div>
   </div>
 </div>
 {% endif %}
@@ -45,56 +163,116 @@
 
       {% if user.is_authenticated and user.is_recruiter %}
       <div class="mt-3">
-        <a href="{% url 'recommended_candidates' %}" class="text-decoration-none" style="color:var(--brand);font-weight:600;">
+        <a href="{% url 'recommended_candidates' %}" class="text-decoration-none fw-600" style="color:var(--brand);">
           Need someone right now? See recommended candidates! →
         </a>
       </div>
       {% endif %}
-
       {% if user.is_authenticated and user.is_job_seeker %}
       <div class="mt-3">
-        <a href="{% url 'recommended_jobs' %}" class="text-decoration-none" style="color:var(--brand);font-weight:600;">
+        <a href="{% url 'recommended_jobs' %}" class="text-decoration-none fw-600" style="color:var(--brand);">
           View recommended jobs based on your skills →
         </a>
       </div>
       {% endif %}
     </div>
 
-    <!-- Right: latest jobs -->
+    <!-- Right: latest jobs with hot badge + match score -->
     <div class="col-lg-6">
       <div class="js-card" style="box-shadow:var(--shadow-md);">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-bold mb-0">Latest opportunities</h5>
-          <a href="{% url 'job_list' %}" class="text-decoration-none small fw-600">View all →</a>
+          <a href="{% url 'job_list' %}" class="text-decoration-none small fw-600" style="color:var(--brand);">View all →</a>
         </div>
 
         {% for job in jobs %}
         <a href="{% url 'job_detail' job.pk %}" class="text-decoration-none text-dark">
           <div class="js-card js-card-hover p-3 mb-2">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <div class="fw-bold">{{ job.title }}</div>
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div class="flex-grow-1" style="min-width:0;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <div class="fw-bold">{{ job.title }}</div>
+                  <!-- JS will inject 🔥 Hot badge if applications >= 10 -->
+                  <span data-applications="{{ job.applications.count }}"></span>
+                </div>
                 <div class="text-muted small">{{ job.company }} · {{ job.location|default:"Remote" }}</div>
+                <!-- Match score: computed in view context or via template tag -->
+                {% if user.is_authenticated and user.is_job_seeker %}
+                  {% if job.match_score %}<div class="mt-1"><span class="match-score">⚡ {{ job.match_score }}% match</span></div>{% endif %}
+                {% endif %}
               </div>
-              <span class="js-badge js-badge-brand">{{ job.get_job_type_display }}</span>
+              <span class="js-badge js-badge-skill" style="white-space:nowrap;flex-shrink:0;">{{ job.get_job_type_display }}</span>
             </div>
             {% if job.skills_list %}
-            <div class="mt-2 d-flex flex-wrap gap-1">
-              {% for skill in job.skills_list %}
-                <span class="js-badge js-badge-skill">{{ skill }}</span>
-              {% endfor %}
+            <div class="mt-2 d-flex flex-wrap gap-1 skill-badge-animate">
+              {% for skill in job.skills_list %}<span class="js-badge js-badge-skill">{{ skill }}</span>{% endfor %}
             </div>
             {% endif %}
           </div>
         </a>
         {% empty %}
-          <p class="text-muted">No jobs posted yet.</p>
+          {% for i in "xxx" %}
+          <div class="mb-2 p-3 js-card">
+            <div class="skeleton mb-2" style="height:16px;width:55%;"></div>
+            <div class="skeleton mb-2" style="height:12px;width:38%;"></div>
+            <div class="d-flex gap-1 mt-2">
+              <div class="skeleton" style="height:22px;width:60px;border-radius:999px;"></div>
+              <div class="skeleton" style="height:22px;width:50px;border-radius:999px;"></div>
+            </div>
+          </div>
+          {% endfor %}
         {% endfor %}
       </div>
     </div>
   </div>
 
-  <!-- Feature cards -->
+  <!-- Feature sections with images -->
+  <div class="row g-4 mb-5 align-items-center">
+    <div class="col-lg-5">
+      <div style="border-radius:20px;overflow:hidden;box-shadow:var(--shadow-md);aspect-ratio:4/3;background:var(--brand-light);">
+        <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80"
+             alt="People working together" style="width:100%;height:100%;object-fit:cover;" loading="lazy"
+             onerror="this.parentElement.style.display='flex';this.parentElement.style.alignItems='center';this.parentElement.style.justifyContent='center';this.parentElement.innerHTML='<span style=font-size:3rem>💻</span>'">
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="section-label mb-2">For Job Seekers</div>
+      <h2 class="fw-bold mb-3" style="font-size:1.75rem;">Your career journey,<br>organized.</h2>
+      <p class="text-muted mb-4">Build a standout profile, discover roles matched to your skills, and track every application through the pipeline — from applied to offer.</p>
+      <div class="row g-3">
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">✅</span><div><div class="fw-bold small">Pipeline Tracker</div><div class="text-muted" style="font-size:.8rem">See every stage at a glance</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🎯</span><div><div class="fw-bold small">Smart Match %</div><div class="text-muted" style="font-size:.8rem">Jobs scored against your skills</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🗺️</span><div><div class="fw-bold small">Map Search</div><div class="text-muted" style="font-size:.8rem">Filter by commute radius</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🎉</span><div><div class="fw-bold small">Offer Celebration</div><div class="text-muted" style="font-size:.8rem">Confetti when you land an offer!</div></div></div></div>
+      </div>
+      {% if not user.is_authenticated %}<a href="{% url 'register_seeker' %}" class="btn btn-brand mt-4">Create Seeker Profile →</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4 mb-5 align-items-center flex-lg-row-reverse">
+    <div class="col-lg-5">
+      <div style="border-radius:20px;overflow:hidden;box-shadow:var(--shadow-md);aspect-ratio:4/3;background:var(--brand-light);">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80"
+             alt="Recruiter reviewing candidates" style="width:100%;height:100%;object-fit:cover;" loading="lazy"
+             onerror="this.parentElement.style.display='flex';this.parentElement.style.alignItems='center';this.parentElement.style.justifyContent='center';this.parentElement.innerHTML='<span style=font-size:3rem>🔍</span>'">
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="section-label mb-2">For Recruiters</div>
+      <h2 class="fw-bold mb-3" style="font-size:1.75rem;">Find the right talent,<br>faster.</h2>
+      <p class="text-muted mb-4">Search a curated pool of candidates, manage your pipeline, and reach out directly — all in one place.</p>
+      <div class="row g-3">
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🔍</span><div><div class="fw-bold small">Candidate Search</div><div class="text-muted" style="font-size:.8rem">Filter by skill, location, projects</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">📊</span><div><div class="fw-bold small">Kanban Pipeline</div><div class="text-muted" style="font-size:.8rem">Move applications through stages</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🔔</span><div><div class="fw-bold small">Saved Searches</div><div class="text-muted" style="font-size:.8rem">Get notified on new matches</div></div></div></div>
+        <div class="col-6"><div class="d-flex align-items-start gap-2"><span style="font-size:1.2rem">🔥</span><div><div class="fw-bold small">Hot Job Alerts</div><div class="text-muted" style="font-size:.8rem">See which roles are trending</div></div></div></div>
+      </div>
+      {% if not user.is_authenticated %}<a href="{% url 'register_recruiter' %}" class="btn btn-brand mt-4">Create Recruiter Profile →</a>{% endif %}
+    </div>
+  </div>
+
+  <!-- Bottom feature grid -->
+  <div class="section-label text-center mb-3">Everything you need</div>
   <div class="row g-3">
     <div class="col-6 col-lg-3">
       <div class="js-card js-card-hover h-100">
@@ -112,9 +290,9 @@
     </div>
     <div class="col-6 col-lg-3">
       <div class="js-card js-card-hover h-100">
-        <div class="mb-2" style="font-size:1.5rem;">🗺️</div>
-        <h6 class="fw-bold">Map-based search</h6>
-        <p class="text-muted small mb-0">Filter roles by distance and commute radius.</p>
+        <div class="mb-2" style="font-size:1.5rem;">🌙</div>
+        <h6 class="fw-bold">Dark mode + themes</h6>
+        <p class="text-muted small mb-0">Light, dark, custom color wheel, or Surprise Me!</p>
       </div>
     </div>
     <div class="col-6 col-lg-3">

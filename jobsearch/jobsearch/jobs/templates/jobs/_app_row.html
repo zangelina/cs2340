@@ -1,0 +1,108 @@
+{# jobs/_app_row.html — Application object expected as: app #}
+<div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+
+  <!-- Left: avatar + job info -->
+  <div class="d-flex align-items-start gap-3 flex-grow-1" style="min-width:0;">
+
+    <!-- Avatar: profile picture or initials -->
+    <div class="app-avatar">
+      {% with sp=app.applicant.seeker_profile %}
+        {% if sp and sp.profile_picture and sp.show_photo %}
+          <img src="{{ sp.profile_picture.url }}" alt="{{ app.applicant.username }}">
+        {% else %}
+          {{ app.job.company|first|upper }}
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Text -->
+    <div style="min-width:0;">
+      <a href="{% url 'job_detail' app.job.pk %}" class="text-decoration-none">
+        <div class="fw-bold text-dark">{{ app.job.title }}</div>
+      </a>
+      <div class="text-muted small">{{ app.job.company }} · {{ app.job.location|default:"Remote" }}</div>
+      {% if app.note %}
+        <div class="text-muted small mt-1 fst-italic" style="max-width:380px;">
+          "{{ app.note|truncatewords:15 }}"
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: status badge + date -->
+  <div class="text-end flex-shrink-0">
+    <span class="js-badge
+      {% if app.status == 'offer' %}badge-offer
+      {% elif app.status == 'interview' %}badge-interview
+      {% elif app.status == 'review' %}badge-review
+      {% elif app.status == 'applied' %}badge-applied
+      {% else %}badge-closed{% endif %}">
+      {% if app.status == 'offer' %}🎉 Offer!
+      {% elif app.status == 'interview' %}🎤 Interview
+      {% elif app.status == 'review' %}👀 In Review
+      {% elif app.status == 'applied' %}📬 Applied
+      {% else %}Closed{% endif %}
+    </span>
+    <div class="text-muted small mt-1">{{ app.created_at|date:"M j, Y" }}</div>
+  </div>
+</div>
+
+<!-- Stage progress tracker -->
+<div class="stage-tracker mt-2">
+
+  {# Step: Applied #}
+  <div class="stage-step
+    {% if app.status == 'applied' %}s-current
+    {% elif app.status == 'review' or app.status == 'interview' or app.status == 'offer' %}s-done
+    {% elif app.status == 'closed' %}s-done{% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">Applied</div>
+  </div>
+
+  <div class="stage-conn {% if app.status == 'review' or app.status == 'interview' or app.status == 'offer' %}active{% endif %}"></div>
+
+  {# Step: In Review #}
+  <div class="stage-step
+    {% if app.status == 'review' %}s-current
+    {% elif app.status == 'interview' or app.status == 'offer' %}s-done{% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">In Review</div>
+  </div>
+
+  <div class="stage-conn {% if app.status == 'interview' or app.status == 'offer' %}active{% endif %}"></div>
+
+  {# Step: Interview #}
+  <div class="stage-step
+    {% if app.status == 'interview' %}s-current
+    {% elif app.status == 'offer' %}s-done{% endif %}">
+    <div class="stage-node">
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="stage-lbl">Interview</div>
+  </div>
+
+  <div class="stage-conn {% if app.status == 'offer' %}green{% endif %}"></div>
+
+  {# Step: Offer #}
+  <div class="stage-step {% if app.status == 'offer' %}s-offer{% endif %}">
+    <div class="stage-node {% if app.status == 'offer' %}node-offer{% endif %}">
+      {% if app.status == 'offer' %}
+      <svg class="stage-tick" viewBox="0 0 10 10" fill="none" style="display:block;">
+        <path d="M1.5 5l2.5 2.5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {% endif %}
+    </div>
+    <div class="stage-lbl {% if app.status == 'offer' %}lbl-offer{% endif %}">Offer</div>
+  </div>
+
+</div>

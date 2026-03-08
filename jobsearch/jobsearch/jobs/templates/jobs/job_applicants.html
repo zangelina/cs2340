@@ -2,65 +2,135 @@
 {% block title %}Applicants — {{ job.title }}{% endblock %}
 
 {% block content %}
-<div class="container py-5" style="max-width: 900px;">
+<div class="container py-5" style="max-width:940px;">
   <a href="{% url 'recruiter_dashboard' %}" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1 mb-3">
     ← Dashboard
   </a>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h2 class="fw-bold mb-0">Applicants</h2>
       <p class="text-muted mb-0">{{ job.title }} at {{ job.company }}</p>
     </div>
-    <span class="js-badge js-badge-brand" style="font-size:.9rem;padding:8px 14px;">
-      {{ applications|length }} applicant{{ applications|length|pluralize }}
-    </span>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="js-badge js-badge-skill" style="font-size:.9rem;padding:8px 14px;">
+        {{ applications|length }} applicant{{ applications|length|pluralize }}
+      </span>
+      <a href="{% url 'recruiter_pipeline' %}" class="btn btn-brand btn-sm">📊 Kanban View</a>
+    </div>
   </div>
 
   {% if applications %}
     {% for app in applications %}
-    <div class="js-card mb-2">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <a href="{% url 'view_candidate' app.applicant.pk %}" class="text-decoration-none fw-bold">
-            {{ app.applicant.username }}
-          </a>
-          <div class="mt-2 d-flex gap-2 flex-wrap">
-            <a class="btn btn-outline-secondary btn-sm"
-              href="{% url 'start_conversation' app.id %}">
-              Message
-            </a>
+    <div class="js-card mb-3" style="box-shadow:var(--shadow-sm);">
+      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
 
-            <a class="btn btn-outline-primary btn-sm"
-              href="mailto:{{ app.applicant.email }}?subject={{ 'Regarding your application'|urlencode }}">
-              Email
+        <!-- Left: avatar + info -->
+        <div class="d-flex align-items-start gap-3 flex-grow-1">
+
+          <a href="{% url 'view_candidate' app.applicant.pk %}" style="text-decoration:none;flex-shrink:0;">
+            {% with sp=app.applicant.seeker_profile %}
+            <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;
+              display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:1.15rem;color:white;
+              background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+              border:2px solid var(--border);flex-shrink:0;">
+              {% if sp and sp.profile_picture and sp.show_photo %}
+                <img src="{{ sp.profile_picture.url }}" alt="{{ app.applicant.username }}"
+                     style="width:100%;height:100%;object-fit:cover;">
+              {% else %}
+                {{ app.applicant.first_name|first|default:app.applicant.username|first|upper }}
+              {% endif %}
+            </div>
+            {% endwith %}
+          </a>
+
+          <div class="flex-grow-1" style="min-width:0;">
+            <a href="{% url 'view_candidate' app.applicant.pk %}"
+               class="text-decoration-none fw-bold text-dark" style="font-size:1rem;">
+              {{ app.applicant.get_full_name|default:app.applicant.username }}
             </a>
+            <div class="text-muted small">@{{ app.applicant.username }}</div>
+
+            {% with sp=app.applicant.seeker_profile %}
+              {% if sp and sp.headline and sp.show_headline %}
+                <div class="small mt-1" style="color:#374151;">{{ sp.headline }}</div>
+              {% endif %}
+              {% if sp and sp.skills and sp.show_skills %}
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                  {% for skill in sp.skills_list|slice:":5" %}
+                    <span class="js-badge js-badge-skill">{{ skill }}</span>
+                  {% endfor %}
+                  {% if sp.skills_list|length > 5 %}
+                    <span class="js-badge" style="color:var(--text-muted);">+{{ sp.skills_list|length|add:"-5" }} more</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <!-- Resume download -->
+              {% if sp and sp.resume %}
+              <div class="mt-2">
+                <a href="{{ sp.resume.url }}" target="_blank"
+                   class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1"
+                   style="font-size:.75rem;border-radius:8px;">
+                  📄 Download Resume
+                </a>
+              </div>
+              {% endif %}
+            {% endwith %}
+
+            <div class="text-muted small mt-2">Applied {{ app.created_at|date:"M j, Y" }}</div>
+
+            {% if app.note %}
+              <div class="text-muted small mt-1 fst-italic">"{{ app.note|truncatewords:20 }}"</div>
+            {% endif %}
+
+            <div class="mt-2 d-flex gap-2 flex-wrap">
+              <a class="btn btn-ghost btn-sm" href="{% url 'view_candidate' app.applicant.pk %}">View Profile</a>
+              <a class="btn btn-ghost btn-sm" href="{% url 'start_conversation' app.id %}">💬 Message</a>
+              <a class="btn btn-ghost btn-sm"
+                 href="mailto:{{ app.applicant.email }}?subject=Regarding%20your%20application%20for%20{{ job.title|urlencode }}">
+                ✉️ Email
+              </a>
+            </div>
           </div>
-          <div class="text-muted small">Applied {{ app.created_at|date:"M j, Y" }}</div>
-          {% if app.note %}
-            <div class="text-muted small mt-1 fst-italic">"{{ app.note|truncatewords:20 }}"</div>
-          {% endif %}
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-          <span class="js-badge status-{{ app.status }}">{{ app.get_status_display }}</span>
+        <!-- Right: status badge + stage changer -->
+        <div class="d-flex flex-column align-items-end gap-2 flex-shrink-0">
+          <span class="js-badge
+            {% if app.status == 'offer' %}badge-offer
+            {% elif app.status == 'interview' %}badge-interview
+            {% elif app.status == 'review' %}badge-review
+            {% elif app.status == 'applied' %}badge-applied
+            {% else %}badge-closed{% endif %}">
+            {% if app.status == 'offer' %}🎉
+            {% elif app.status == 'interview' %}🎤
+            {% elif app.status == 'review' %}👀
+            {% elif app.status == 'applied' %}📬
+            {% else %}📁{% endif %}
+            {{ app.get_status_display }}
+          </span>
 
-          <form method="post" action="{% url 'update_application_status' app.pk %}" class="d-inline">
+          <form method="post" action="{% url 'update_application_status' app.pk %}">
             {% csrf_token %}
-            <select name="status" class="form-select form-select-sm" style="width:auto;border-radius:8px;"
+            <select name="status" class="form-select form-select-sm"
+                    style="width:auto;border-radius:8px;font-size:.8rem;"
                     onchange="this.form.submit()">
               <option value="">Move to…</option>
-              <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
-              <option value="review" {% if app.status == "review" %}selected{% endif %}>In Review</option>
+              <option value="applied"   {% if app.status == "applied"   %}selected{% endif %}>Applied</option>
+              <option value="review"    {% if app.status == "review"    %}selected{% endif %}>In Review</option>
               <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
-              <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
-              <option value="closed" {% if app.status == "closed" %}selected{% endif %}>Closed</option>
+              <option value="offer"     {% if app.status == "offer"     %}selected{% endif %}>Offer</option>
+              <option value="closed"    {% if app.status == "closed"    %}selected{% endif %}>Closed</option>
             </select>
           </form>
         </div>
+
       </div>
     </div>
     {% endfor %}
+
   {% else %}
     <div class="js-card text-center py-5">
       <div style="font-size:2.5rem;margin-bottom:.5rem;">📋</div>
@@ -69,4 +139,12 @@
     </div>
   {% endif %}
 </div>
+
+<style>
+.badge-offer     { background:rgba(16,185,129,.15); color:#065f46; border-color:rgba(16,185,129,.4); }
+.badge-interview { background:rgba(139,92,246,.1);  color:#7c3aed; border-color:rgba(139,92,246,.3); }
+.badge-review    { background:rgba(245,158,11,.1);  color:#b45309; border-color:rgba(245,158,11,.3); }
+.badge-applied   { background:rgba(59,130,246,.1);  color:#2563eb; border-color:rgba(59,130,246,.3); }
+.badge-closed    { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; }
+</style>
 {% endblock %}

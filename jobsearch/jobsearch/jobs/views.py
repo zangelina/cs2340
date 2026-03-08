@@ -7,8 +7,12 @@ from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from .models import Conversation, Message, Application
-from .forms import MessageForm
+from .forms import MessageForm, RecruiterProfileForm
 from django.http import HttpResponseForbidden
+from django.http import JsonResponse
+from django.utils import timezone
+from django.db.models import Count
+import datetime
 
 #Neal
 from django.utils import timezone
@@ -34,8 +38,7 @@ from .forms import (
     ApplicationForm,
     ProfileReportForm,
 )
-from .models import CustomUser, JobPosting, JobSeekerProfile, Application, ProfileReport
-
+from .models import CustomUser, JobPosting, JobSeekerProfile, RecruiterProfile, Application, ProfileReport
 
 # ── Admin guard ────────────────────────────────────────
 
@@ -47,8 +50,24 @@ admin_required = user_passes_test(is_admin_user)
 
 # ── Home ───────────────────────────────────────────────
 
+#    This adds match_score to each job card for logged-in seekers.
+
 def home(request):
     jobs = JobPosting.objects.filter(is_active=True)[:6]
+
+    # Annotate match_score for job seekers
+    if request.user.is_authenticated and request.user.is_job_seeker():
+        profile = JobSeekerProfile.objects.filter(user=request.user).first()
+        if profile and profile.skills:
+            seeker_skills = {s.strip().lower() for s in profile.skills.split(',') if s.strip()}
+            for job in jobs:
+                job_skills = {s.strip().lower() for s in job.skills.split(',') if s.strip()}
+                if seeker_skills and job_skills:
+                    overlap = len(seeker_skills & job_skills)
+                    job.match_score = round((overlap / len(job_skills)) * 100) if job_skills else 0
+                else:
+                    job.match_score = 0
+
     return render(request, "jobs/home.html", {"jobs": jobs})
 
 
@@ -193,12 +212,28 @@ def apply_to_job(request, pk):
 
 # ── My Applications ───────────────────────────────────
 
+# ── REPLACE the existing my_applications view in views.py with this ──────────
+
 @login_required
 def my_applications(request):
     if not request.user.is_job_seeker():
         return redirect("home")
-    apps = Application.objects.filter(applicant=request.user).select_related("job").order_by("-created_at")
-    return render(request, "jobs/my_applications.html", {"applications": apps})
+    apps = (
+        Application.objects
+        .filter(applicant=request.user)
+        .select_related("job", "applicant__seeker_profile")
+        .order_by("-created_at")
+    )
+
+    # Status counts for the summary strip
+    status_counts = {}
+    for a in apps:
+        status_counts[a.status] = status_counts.get(a.status, 0) + 1
+
+    return render(request, "jobs/my_applications.html", {
+        "applications": apps,
+        "status_counts": status_counts,
+    })
 
 
 # ── Recruiter CRUD ────────────────────────────────────
@@ -209,6 +244,41 @@ def recruiter_dashboard(request):
         return redirect("home")
     jobs = JobPosting.objects.filter(recruiter=request.user)
     return render(request, "jobs/recruiter_dashboard.html", {"jobs": jobs})
+
+@login_required
+def recruiter_profile(request):
+    """View the recruiter's own profile."""
+    if not request.user.is_recruiter():
+        return redirect("home")
+    profile = RecruiterProfile.objects.filter(user=request.user).first()
+    return render(request, "jobs/recruiter_profile.html", {"profile": profile})
+
+
+@login_required
+def recruiter_profile_edit(request):
+    """Edit the recruiter's profile (company name, website, bio + name)."""
+    if not request.user.is_recruiter():
+        return redirect("home")
+
+    profile, _ = RecruiterProfile.objects.get_or_create(
+        user=request.user,
+        defaults={"company_name": ""}
+    )
+
+    if request.method == "POST":
+        form = RecruiterProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            # Update name fields on the user object
+            request.user.first_name = request.POST.get("first_name", request.user.first_name).strip()
+            request.user.last_name = request.POST.get("last_name", request.user.last_name).strip()
+            request.user.save()
+            form.save()
+            messages.success(request, "Profile updated!")
+            return redirect("recruiter_profile")
+    else:
+        form = RecruiterProfileForm(instance=profile)
+
+    return render(request, "jobs/recruiter_profile_edit.html", {"form": form})
 
 
 @login_required
@@ -497,13 +567,28 @@ def update_application_status_ajax(request, app_id):
 
 # ── Job Seeker Profile ────────────────────────────────
 
+#    This adds a completion_pct integer (0-100) for the profile completion ring.
+
 @login_required
 def seeker_profile(request):
     if not request.user.is_job_seeker():
         return redirect("home")
     profile, _ = JobSeekerProfile.objects.get_or_create(user=request.user)
-    return render(request, "jobs/seeker_profile.html", {"profile": profile})
 
+    # Compute completion percentage (count filled optional fields too)
+    fields_to_check = [
+        request.user.first_name, request.user.last_name,
+        profile.headline, profile.bio, profile.skills,
+        profile.education, profile.work_experience,
+        profile.location, profile.links,
+    ]
+    filled = sum(1 for f in fields_to_check if f and str(f).strip())
+    completion_pct = round((filled / len(fields_to_check)) * 100)
+
+    return render(request, "jobs/seeker_profile.html", {
+        "profile": profile,
+        "completion_pct": completion_pct,
+    })
 
 @login_required
 def seeker_profile_edit(request):
@@ -783,3 +868,86 @@ def start_conversation_with_candidate(request, user_id):
         defaults={"application": None},
     )
     return redirect("conversation_detail", convo_id=convo.id)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 1. RECRUITER KANBAN PIPELINE VIEW
+#    URL: path("recruiter/pipeline/", views.recruiter_pipeline, name="recruiter_pipeline")
+# ─────────────────────────────────────────────────────────────────────
+@login_required
+def recruiter_pipeline(request):
+    if not request.user.is_recruiter:
+        return redirect("home")
+
+    # All applications for jobs owned by this recruiter
+    applications = (
+        Application.objects
+        .filter(job__recruiter=request.user)
+        .select_related("applicant", "applicant__seeker_profile", "job")
+        .order_by("-created_at")
+    )
+
+    COLUMNS = [
+        ("applied",   "Applied",    "#3b82f6", "📬"),
+        ("review",    "In Review",  "#f59e0b", "👀"),
+        ("interview", "Interview",  "#8b5cf6", "🎤"),
+        ("offer",     "Offer",      "#10b981", "🎉"),
+        ("closed",    "Closed",     "#9ca3af", "📁"),
+    ]
+
+    return render(request, "jobs/recruiter_pipeline.html", {
+        "applications": applications,
+        "columns": COLUMNS,
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 2. AJAX STATUS UPDATE (used by kanban drag-and-drop)
+#    URL: path("applications/<int:pk>/status/", views.update_application_status_ajax,
+#              name="update_application_status_ajax")
+#    Note: you may already have update_application_status — this is the
+#          AJAX-only version that returns JSON instead of redirecting.
+# ─────────────────────────────────────────────────────────────────────
+@login_required
+def update_application_status_ajax(request, pk):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    app = get_object_or_404(Application, pk=pk, job__recruiter=request.user)
+    new_status = request.POST.get("status")
+    valid = [s[0] for s in Application.STATUS_CHOICES]
+    if new_status not in valid:
+        return JsonResponse({"error": "Invalid status"}, status=400)
+    app.status = new_status
+    app.save(update_fields=["status"])
+    return JsonResponse({"ok": True, "status": new_status})
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 3. LIVE STATS API (used by home page ticker)
+#    URL: path("api/stats/today/", views.stats_today, name="stats_today")
+# ─────────────────────────────────────────────────────────────────────
+def stats_today(request):
+    today = timezone.now().date()
+    start = datetime.datetime.combine(today, datetime.time.min, tzinfo=timezone.utc)
+
+    apps_today   = Application.objects.filter(created_at__gte=start).count()
+    offers_today = Application.objects.filter(
+        created_at__gte=start, status="offer"
+    ).count()
+
+    # Top 3 skills from all active job postings
+    from collections import Counter
+    skill_counter = Counter()
+    for job in JobPosting.objects.filter(is_active=True).only("required_skills"):
+        if job.required_skills:
+            for skill in job.required_skills.split(","):
+                s = skill.strip()
+                if s:
+                    skill_counter[s] += 1
+    top_skills = [s for s, _ in skill_counter.most_common(3)]
+
+    return JsonResponse({
+        "applications_today": apps_today,
+        "offers_today":       offers_today,
+        "top_skills":         top_skills,
+    })

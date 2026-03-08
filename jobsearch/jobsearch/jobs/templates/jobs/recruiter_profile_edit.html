@@ -1,0 +1,63 @@
+{% extends "jobs/base.html" %}
+{% block title %}Edit Recruiter Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 680px;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Edit Recruiter Profile</h2>
+    <a href="{% url 'recruiter_profile' %}" class="btn btn-ghost btn-sm">← Back</a>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Identity -->
+    <div class="js-card mb-4">
+      <h5 class="fw-bold mb-3">Personal Information</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">First Name</label>
+          <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control" placeholder="First name">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Last Name</label>
+          <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control" placeholder="Last name">
+        </div>
+      </div>
+    </div>
+
+    <!-- Company -->
+    <div class="js-card mb-4">
+      <h5 class="fw-bold mb-3">Company Details</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Company Name <span class="text-danger">*</span></label>
+        {{ form.company_name }}
+        {% for e in form.company_name.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Company Website</label>
+        {{ form.company_website }}
+        <div class="form-text">e.g. https://yourcompany.com</div>
+      </div>
+
+      <div class="mb-0">
+        <label class="form-label fw-semibold">About / Bio</label>
+        {{ form.bio }}
+        <div class="form-text">Brief description of your company and what you're looking for in candidates.</div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex gap-2">
+        <button class="btn btn-brand" type="submit">Save Profile</button>
+        <a href="{% url 'recruiter_profile' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+      <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:#fecaca;">
+        Delete Account
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

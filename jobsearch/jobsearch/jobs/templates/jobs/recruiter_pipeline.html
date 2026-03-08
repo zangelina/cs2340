@@ -1,0 +1,344 @@
+{% extends "jobs/base.html" %}
+{% block title %}Applicant Pipeline
+<script>
+document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
+  el.style.color = el.dataset.color;
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="min-height:100vh;">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0">Applicant Pipeline</h2>
+      <div class="text-muted small">Drag cards between columns to update status instantly</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Kanban board -->
+  <div id="kanbanBoard" class="kanban-board">
+    {% for status_key, status_label, color, icon in columns %}
+    <div class="kanban-col" data-status="{{ status_key }}">
+      <div class="kanban-col-header">
+        <div class="kanban-col-title" data-color="{{ color }}">
+          {{ icon }} {{ status_label }}
+        </div>
+        <span class="kanban-col-count" id="count-{{ status_key }}">
+          {{ applications|dictsort:"status"|length }}
+        </span>
+      </div>
+      <div class="kanban-cards" id="col-{{ status_key }}">
+        {% for app in applications %}
+          {% if app.status == status_key %}
+          <div class="kanban-card" draggable="true" data-app-id="{{ app.pk }}">
+            <div class="d-flex align-items-start gap-2 mb-1">
+              {% with sp=app.applicant.seeker_profile %}
+              <div class="kanban-avatar">
+                {% if sp and sp.profile_picture and sp.show_photo %}
+                  <img src="{{ sp.profile_picture.url }}" alt="{{ app.applicant.username }}"
+                       style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                {% else %}
+                  {{ app.applicant.first_name|first|default:app.applicant.username|first|upper }}
+                {% endif %}
+              </div>
+              {% endwith %}
+              <div style="min-width:0;flex:1;">
+                <div class="kanban-card-name">
+                  {{ app.applicant.get_full_name|default:app.applicant.username }}
+                </div>
+                <div class="kanban-card-job">{{ app.job.title }}</div>
+              </div>
+            </div>
+            {% with sp=app.applicant.seeker_profile %}
+              {% if sp and sp.headline and sp.show_headline %}
+                <div class="kanban-card-headline">{{ sp.headline }}</div>
+              {% endif %}
+            {% endwith %}
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="kanban-card-date">{{ app.created_at|date:"M j" }}</span>
+              <a href="{% url 'view_candidate' app.applicant.pk %}"
+                 class="btn btn-ghost btn-sm py-0 px-2"
+                 style="font-size:.65rem;"
+                 onclick="event.stopPropagation();">View →</a>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="kanban-empty" id="empty-{{ status_key }}"
+          {% for app in applications %}{% if app.status == status_key %}style="display:none;"{% endif %}{% endfor %}>
+          Drop here
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- CSRF for AJAX -->
+<form id="csrfForm">{% csrf_token %}</form>
+
+<style>
+/* ── Board ──────────────────────────────────────────────── */
+.kanban-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 24px;
+  align-items: flex-start;
+}
+.kanban-board::-webkit-scrollbar { height: 7px; }
+.kanban-board::-webkit-scrollbar-track { background: transparent; }
+.kanban-board::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+/* ── Column ─────────────────────────────────────────────── */
+.kanban-col {
+  flex: 0 0 240px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 10px;
+  min-height: 300px;
+  transition: border-color .2s, background .2s;
+}
+.kanban-col.drag-over {
+  border-color: var(--brand);
+  background: hsl(var(--brand-h,220),60%,97%);
+}
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+}
+.kanban-col-title {
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.kanban-col-count {
+  font-size: .7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.kanban-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 10px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: box-shadow .15s, transform .15s, border-color .15s, opacity .15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.kanban-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--brand);
+}
+.kanban-card.dragging {
+  opacity: .45;
+  cursor: grabbing;
+  box-shadow: 0 20px 50px rgba(0,0,0,.18);
+}
+.kanban-card.card-flash {
+  animation: cardFlash .55s ease forwards;
+}
+@keyframes cardFlash {
+  0%   { background: hsl(var(--brand-h,220),80%,93%); border-color: var(--brand); }
+  100% { background: var(--card); border-color: var(--border); }
+}
+.kanban-card-name  { font-weight: 700; font-size: .85rem; color: var(--text); }
+.kanban-card-job   { font-size: .72rem; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kanban-card-headline { font-size: .7rem; color: var(--text-muted); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
+.kanban-card-date  { font-size: .65rem; color: var(--text-muted); }
+.kanban-avatar {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: white; font-weight: 800; font-size: .75rem;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Drop placeholder ───────────────────────────────────── */
+.drop-placeholder {
+  height: 72px;
+  border: 2px dashed var(--brand);
+  border-radius: 12px;
+  background: hsl(var(--brand-h,220),60%,96%);
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+
+/* ── Empty state ────────────────────────────────────────── */
+.kanban-empty {
+  text-align: center;
+  padding: 20px 8px;
+  color: var(--text-muted);
+  font-size: .75rem;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+}
+</style>
+
+<script>
+(function() {
+  const CSRF = document.querySelector('#csrfForm [name=csrfmiddlewaretoken]').value;
+
+  let dragged      = null;
+  let fromCol      = null;
+  let placeholder  = null;
+
+  /* ── Attach drag to all cards ──────────────────────────── */
+  function initCards() {
+    document.querySelectorAll('.kanban-card').forEach(attachCard);
+    updateAllCounts();
+  }
+
+  function attachCard(card) {
+    card.addEventListener('dragstart', e => {
+      dragged = card;
+      fromCol = card.closest('.kanban-col');
+      setTimeout(() => card.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+
+      placeholder = document.createElement('div');
+      placeholder.className = 'drop-placeholder';
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      placeholder?.remove();
+      placeholder = null;
+      dragged = null;
+      fromCol = null;
+    });
+  }
+
+  /* ── Column drop zone ──────────────────────────────────── */
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const cardsEl = col.querySelector('.kanban-cards');
+
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('drag-over');
+
+      // Show placeholder at correct position
+      const after = getAfterElement(cardsEl, e.clientY);
+      if (placeholder) {
+        if (after == null) cardsEl.appendChild(placeholder);
+        else cardsEl.insertBefore(placeholder, after);
+      }
+    });
+
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove('drag-over');
+        placeholder?.remove();
+      }
+    });
+
+    col.addEventListener('drop', async e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+
+      const newStatus = col.dataset.status;
+      if (!dragged) return;
+
+      const sameCol = dragged.closest('.kanban-col') === col;
+
+      // Move card in DOM
+      const after = getAfterElement(cardsEl, e.clientY);
+      placeholder?.remove();
+      if (after == null) cardsEl.appendChild(dragged);
+      else cardsEl.insertBefore(dragged, after);
+
+      // Hide/show empty states
+      updateEmpty(col);
+      if (fromCol && fromCol !== col) updateEmpty(fromCol);
+
+      if (!sameCol) {
+        // Flash
+        dragged.classList.add('card-flash');
+        setTimeout(() => dragged.classList.remove('card-flash'), 600);
+
+        updateAllCounts();
+
+        // Persist via AJAX
+        const appId = dragged.dataset.appId;
+        try {
+          await fetch(`/applications/${appId}/status/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': CSRF,
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: `status=${newStatus}`
+          });
+        } catch(err) {
+          console.error('Status update failed', err);
+        }
+      }
+    });
+  });
+
+  /* ── Helpers ───────────────────────────────────────────── */
+  function getAfterElement(container, y) {
+    const cards = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
+    return cards.reduce((closest, child) => {
+      const box    = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element ?? null;
+  }
+
+  function updateEmpty(col) {
+    const cardsEl = col.querySelector('.kanban-cards');
+    const emptyEl = col.querySelector('.kanban-empty');
+    if (!emptyEl) return;
+    const hasCards = cardsEl.querySelectorAll('.kanban-card').length > 0;
+    emptyEl.style.display = hasCards ? 'none' : 'block';
+  }
+
+  function updateAllCounts() {
+    document.querySelectorAll('.kanban-col').forEach(col => {
+      const status = col.dataset.status;
+      const count  = col.querySelectorAll('.kanban-card').length;
+      const el     = document.getElementById('count-' + status);
+      if (el) el.textContent = count;
+    });
+  }
+
+  initCards();
+})();
+</script>
+
+
+<script>
+document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
+  el.style.color = el.dataset.color;
+});
+</script>
+
+{% endblock %}

@@ -50,6 +50,19 @@ class RecruiterRegistrationForm(UserCreationForm):
         return user
 
 
+class RecruiterProfileForm(forms.ModelForm):
+    class Meta:
+        model = RecruiterProfile
+        fields = ["company_name", "company_website", "bio"]
+        widgets = {
+            "company_name": forms.TextInput(attrs={**FC, "placeholder": "e.g. Google, Acme Corp"}),
+            "company_website": forms.URLInput(attrs={**FC, "placeholder": "https://yourcompany.com"}),
+            "bio": forms.Textarea(attrs={
+                **FC, "rows": 4,
+                "placeholder": "Tell candidates about your company, culture, and what you look for in applicants…"
+            }),
+        }
+
 class JobPostingForm(forms.ModelForm):
     class Meta:
         model = JobPosting
@@ -83,7 +96,7 @@ class JobSeekerProfileForm(forms.ModelForm):
     class Meta:
         model = JobSeekerProfile
         fields = [
-            "profile_picture", "headline", "bio", "location", "phone", "website",
+            "profile_picture", "headline", "bio", "resume", "location", "phone", "website",
             "skills", "education", "work_experience", "projects",
             "certifications", "languages", "links",
             "featured_label", "featured_url", "featured_video_url",
@@ -95,6 +108,7 @@ class JobSeekerProfileForm(forms.ModelForm):
             "profile_picture": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "headline": forms.TextInput(attrs={**FC, "placeholder": "e.g. Aspiring Software Engineer"}),
             "bio": forms.Textarea(attrs={**FC, "rows": 3, "placeholder": "A short summary about yourself…"}),
+            "resume": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "location": forms.TextInput(attrs={**FC, "placeholder": "Atlanta, GA"}),
             "phone": forms.TextInput(attrs={**FC, "placeholder": "+1 (555) 123-4567"}),
             "website": forms.URLInput(attrs={**FC, "placeholder": "https://yoursite.com"}),
@@ -119,7 +133,7 @@ class SeekerPrivacyForm(forms.ModelForm):
     class Meta:
         model = JobSeekerProfile
         fields = [
-            "is_public", "show_photo", "show_headline", "show_bio",
+            "is_public", "show_photo", "show_resume", "show_headline", "show_bio",
             "show_skills", "show_education", "show_experience",
             "show_projects", "show_certifications", "show_languages",
             "show_links", "show_location", "show_phone", "show_email",

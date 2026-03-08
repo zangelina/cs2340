@@ -1,0 +1,29 @@
+{# Replace the header block inside seeker_profile.html's js-card with this.
+   Find the section starting with:
+     <div class="d-flex align-items-start gap-3 mb-4 pb-3" ...>
+   and replace the entire div (through its closing tag) with the block below.
+#}
+
+<div class="d-flex align-items-start gap-3 mb-4 pb-3" style="border-bottom:1px solid var(--border);">
+  {% if profile.profile_picture %}
+    <img src="{{ profile.profile_picture.url }}" alt="Photo"
+         style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">
+  {% else %}
+    <div style="width:72px;height:72px;border-radius:50%;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:var(--brand);flex-shrink:0;">
+      {{ user.first_name|first|default:user.username|first }}
+    </div>
+  {% endif %}
+
+  <div class="flex-grow-1">
+    <h4 class="fw-bold mb-0">{{ user.first_name }} {{ user.last_name }}</h4>
+    <div class="text-muted">@{{ user.username }} · {{ user.email }}</div>
+    {% if profile.headline %}
+      <p class="mb-0 mt-1">{{ profile.headline }}
+        {% if not profile.show_headline %}<span class="js-badge js-badge-warning ms-1" style="font-size:.6rem;">Hidden</span>{% endif %}
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Profile completion ring (powered by base.html JS via data-completion) -->
+  <div data-completion="{{ completion_pct|default:0 }}" class="flex-shrink-0" title="Profile {{ completion_pct|default:0 }}% complete"></div>
+</div>

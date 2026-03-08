@@ -40,7 +40,8 @@
               {{ user.first_name|first|default:user.username|first }}
             </div>
           {% endif %}
-          <div>
+        
+          <div class="flex-grow-1">
             <h4 class="fw-bold mb-0">{{ user.first_name }} {{ user.last_name }}</h4>
             <div class="text-muted">@{{ user.username }} · {{ user.email }}</div>
             {% if profile.headline %}
@@ -49,6 +50,9 @@
               </p>
             {% endif %}
           </div>
+        
+          <!-- Profile completion ring (powered by base.html JS via data-completion) -->
+          <div data-completion="{{ completion_pct|default:0 }}" class="flex-shrink-0" title="Profile {{ completion_pct|default:0 }}% complete"></div>
         </div>
 
         {% if profile.bio %}

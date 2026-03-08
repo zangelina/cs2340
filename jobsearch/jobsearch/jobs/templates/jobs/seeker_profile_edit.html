@@ -44,6 +44,16 @@
         {{ profile_form.profile_picture }}
       </div>
 
+      <div class="mb-3">
+        <label class="form-label fw-600">Resume</label>
+        {{ profile_form.resume }}
+        {% if profile.resume %}
+          <div class="mt-1 small text-muted">
+            Current: <a href="{{ profile.resume.url }}" target="_blank">📄 View uploaded resume</a>
+          </div>
+        {% endif %}
+      </div>
+
       <div class="mt-3">
         <label class="form-label fw-semibold">Headline <span class="text-danger">*</span></label>
         {{ profile_form.headline }}

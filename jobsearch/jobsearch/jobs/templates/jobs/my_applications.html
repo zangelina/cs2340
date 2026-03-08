@@ -2,7 +2,97 @@
 {% block title %}My Applications{% endblock %}
 
 {% block content %}
-<div class="container py-5" style="max-width: 850px;">
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     OFFER CELEBRATION OVERLAY
+     Shows automatically when the user has at least one offer.
+═══════════════════════════════════════════════════════════════════════ -->
+{% for app in applications %}{% if app.status == "offer" %}{% if forloop.first %}
+<div id="offerCelebration" style="
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  animation:fadeInOverlay .4s ease;
+">
+  <!-- Confetti lives here, behind the card -->
+  <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:10000;width:100%;height:100%;"></canvas>
+
+  <!-- Card -->
+  <div style="
+    background:white;border-radius:28px;
+    padding:2.5rem 2rem 2rem;max-width:520px;width:90%;
+    text-align:center;position:relative;z-index:10001;
+    box-shadow:0 40px 100px rgba(0,0,0,.28);
+    animation:popIn .55s cubic-bezier(.34,1.56,.64,1);
+  ">
+    <!-- Animated trophy -->
+    <div style="font-size:4rem;display:inline-block;margin-bottom:.25rem;
+                animation:trophyBounce 1.2s ease-in-out infinite alternate;">🏆</div>
+
+    <!-- Gradient headline -->
+    <h2 style="font-size:2rem;font-weight:900;margin-bottom:.25rem;
+               background:linear-gradient(135deg,#f59e0b 0%,#ef4444 40%,#8b5cf6 100%);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+      Congratulations!
+    </h2>
+
+    <p style="color:#6b7280;font-size:1.05rem;margin-bottom:1.5rem;line-height:1.5;">
+      You have an offer for <strong style="color:#1f2937;">{{ app.job.title }}</strong><br>
+      at <strong style="color:#1f2937;">{{ app.job.company }}</strong>! 🎉
+    </p>
+
+    <!-- Recruiter personalised message (optional — add offer_message field or skip) -->
+    {% if app.offer_message %}
+    <div style="background:linear-gradient(135deg,#fefce8,#fef9c3);
+                border:1px solid #fde68a;border-radius:14px;
+                padding:1rem 1.25rem;margin-bottom:1.5rem;text-align:left;">
+      <div style="font-size:.7rem;font-weight:800;color:#92400e;
+                  text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;">
+        Message from {{ app.job.company }}
+      </div>
+      <p style="margin:0;color:#1f2937;font-style:italic;line-height:1.5;">
+        "{{ app.offer_message }}"
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- CTA buttons -->
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.25rem;">
+      <a href="{% url 'inbox' %}" class="btn btn-brand"
+         style="border-radius:999px;padding:.65rem 1.5rem;font-weight:700;">
+        💬 Message Recruiter
+      </a>
+      <button onclick="closeCelebration()" class="btn btn-ghost"
+              style="border-radius:999px;padding:.65rem 1.5rem;font-weight:700;">
+        View Applications
+      </button>
+    </div>
+
+    <!-- Fun pill badges -->
+    <div style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;">
+      <span style="background:#fef9c3;color:#92400e;border:1px solid #fde68a;
+                   border-radius:999px;padding:.2rem .75rem;font-size:.73rem;font-weight:700;">
+        🌟 New Offer
+      </span>
+      <span style="background:#dcfce7;color:#14532d;border:1px solid #bbf7d0;
+                   border-radius:999px;padding:.2rem .75rem;font-size:.73rem;font-weight:700;">
+        ✅ {{ app.job.title }}
+      </span>
+      <span style="background:#ede9fe;color:#4c1d95;border:1px solid #ddd6fe;
+                   border-radius:999px;padding:.2rem .75rem;font-size:.73rem;font-weight:700;">
+        🏢 {{ app.job.company }}
+      </span>
+    </div>
+  </div>
+</div>
+{% endif %}{% endif %}{% endfor %}
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MAIN PAGE
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="container py-5" style="max-width:900px;min-height:100vh;">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold">My Applications</h2>
     <a href="{% url 'job_list' %}" class="btn btn-brand btn-sm">Browse Jobs</a>
@@ -10,45 +100,293 @@
 
   {% if applications %}
 
-    <!-- Status summary -->
-    <div class="row g-2 mb-4">
-      {% with applied=0 review=0 interview=0 offer=0 closed=0 %}
-      <div class="col">
-        <div class="js-card text-center py-3">
-          <div class="fw-bold fs-4">{{ applications|length }}</div>
-          <div class="text-muted small">Total</div>
+    <!-- Stage summary strip -->
+    <div class="js-card mb-5 p-0 overflow-hidden" style="box-shadow:var(--shadow-md);">
+      <div class="row g-0 text-center">
+        <div class="col border-end py-3">
+          <div style="font-size:1.4rem;">📬</div>
+          <div class="fw-bold fs-5">{{ status_counts.applied|default:0 }}</div>
+          <div class="text-muted" style="font-size:.73rem;">Applied</div>
+        </div>
+        <div class="col border-end py-3">
+          <div style="font-size:1.4rem;">👀</div>
+          <div class="fw-bold fs-5">{{ status_counts.review|default:0 }}</div>
+          <div class="text-muted" style="font-size:.73rem;">In Review</div>
+        </div>
+        <div class="col border-end py-3">
+          <div style="font-size:1.4rem;">🎤</div>
+          <div class="fw-bold fs-5">{{ status_counts.interview|default:0 }}</div>
+          <div class="text-muted" style="font-size:.73rem;">Interview</div>
+        </div>
+        <div class="col border-end py-3 {% if status_counts.offer %}offer-highlight{% endif %}">
+          <div style="font-size:1.4rem;">🎉</div>
+          <div class="fw-bold fs-5 {% if status_counts.offer %}offer-count{% endif %}">
+            {{ status_counts.offer|default:0 }}
+          </div>
+          <div class="text-muted" style="font-size:.73rem;">Offer</div>
+        </div>
+        <div class="col py-3">
+          <div style="font-size:1.4rem;">📁</div>
+          <div class="fw-bold fs-5">{{ status_counts.closed|default:0 }}</div>
+          <div class="text-muted" style="font-size:.73rem;">Closed</div>
         </div>
       </div>
-      {% endwith %}
     </div>
 
-    {% for app in applications %}
-    <div class="js-card mb-2">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <a href="{% url 'job_detail' app.job.pk %}" class="text-decoration-none">
-            <div class="fw-bold">{{ app.job.title }}</div>
-          </a>
-          <div class="text-muted small">{{ app.job.company }} · {{ app.job.location|default:"Remote" }}</div>
-          {% if app.note %}
-            <div class="text-muted small mt-1" style="font-style:italic;">"{{ app.note|truncatewords:15 }}"</div>
-          {% endif %}
-        </div>
-        <div class="text-end">
-          <span class="js-badge status-{{ app.status }}">{{ app.get_status_display }}</span>
-          <div class="text-muted small mt-1">{{ app.created_at|date:"M j, Y" }}</div>
-        </div>
+    <!-- ── OFFER ──────────────────────────────────── -->
+    {% for app in applications %}{% if app.status == "offer" %}
+      {% if forloop.first %}
+        <div class="mb-2"><div class="d-flex align-items-center gap-2 mb-2">
+          <span class="stage-dot-indicator" style="background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.25);"></span>
+          <span class="stage-section-label" style="color:#059669;">🎉 Active Offers</span>
+        </div></div>
+      {% endif %}
+      <div class="js-card mb-2" style="border-left:4px solid #10b981;background:linear-gradient(135deg,#f0fdf4,#ffffff);box-shadow:var(--shadow-md);">
+        {% include "jobs/_app_row.html" with app=app %}
       </div>
-    </div>
-    {% endfor %}
+    {% endif %}{% endfor %}
+
+    <!-- ── INTERVIEW ──────────────────────────────── -->
+    {% for app in applications %}{% if app.status == "interview" %}
+      {% if forloop.first %}
+        <div class="mt-3 mb-2"><div class="d-flex align-items-center gap-2 mb-2">
+          <span class="stage-dot-indicator" style="background:#8b5cf6;"></span>
+          <span class="stage-section-label">Interview</span>
+        </div></div>
+      {% endif %}
+      <div class="js-card mb-2" style="border-left:4px solid #8b5cf6;">
+        {% include "jobs/_app_row.html" with app=app %}
+      </div>
+    {% endif %}{% endfor %}
+
+    <!-- ── IN REVIEW ──────────────────────────────── -->
+    {% for app in applications %}{% if app.status == "review" %}
+      {% if forloop.first %}
+        <div class="mt-3 mb-2"><div class="d-flex align-items-center gap-2 mb-2">
+          <span class="stage-dot-indicator" style="background:#f59e0b;"></span>
+          <span class="stage-section-label">In Review</span>
+        </div></div>
+      {% endif %}
+      <div class="js-card mb-2" style="border-left:4px solid #f59e0b;">
+        {% include "jobs/_app_row.html" with app=app %}
+      </div>
+    {% endif %}{% endfor %}
+
+    <!-- ── APPLIED ────────────────────────────────── -->
+    {% for app in applications %}{% if app.status == "applied" %}
+      {% if forloop.first %}
+        <div class="mt-3 mb-2"><div class="d-flex align-items-center gap-2 mb-2">
+          <span class="stage-dot-indicator" style="background:#3b82f6;"></span>
+          <span class="stage-section-label">Applied</span>
+        </div></div>
+      {% endif %}
+      <div class="js-card mb-2" style="border-left:4px solid #3b82f6;">
+        {% include "jobs/_app_row.html" with app=app %}
+      </div>
+    {% endif %}{% endfor %}
+
+    <!-- ── CLOSED ─────────────────────────────────── -->
+    {% for app in applications %}{% if app.status == "closed" %}
+      {% if forloop.first %}
+        <div class="mt-3 mb-2"><div class="d-flex align-items-center gap-2 mb-2">
+          <span class="stage-dot-indicator" style="background:#9ca3af;"></span>
+          <span class="stage-section-label" style="color:#9ca3af;">Closed</span>
+        </div></div>
+      {% endif %}
+      <div class="js-card mb-2" style="border-left:4px solid #d1d5db;opacity:.75;">
+        {% include "jobs/_app_row.html" with app=app %}
+      </div>
+    {% endif %}{% endfor %}
 
   {% else %}
     <div class="js-card text-center py-5">
       <div style="font-size:2.5rem;margin-bottom:.5rem;">📭</div>
       <h5 class="fw-bold mb-2">No applications yet</h5>
-      <p class="text-muted mb-3">Start applying to jobs to track them here.</p>
+      <p class="text-muted mb-3">Start applying to jobs to track your progress.</p>
       <a href="{% url 'job_list' %}" class="btn btn-brand">Browse Jobs</a>
     </div>
   {% endif %}
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     STYLES
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+/* Offer summary cell highlight */
+.offer-highlight { background: linear-gradient(135deg, #fef9c3, #fefce8); }
+.offer-count     { color: #059669; }
+
+/* Overlay animations */
+@keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+@keyframes popIn {
+  from { opacity:0; transform:scale(.65) translateY(40px); }
+  to   { opacity:1; transform:scale(1)   translateY(0); }
+}
+@keyframes trophyBounce {
+  from { transform:translateY(0) rotate(-6deg) scale(1); }
+  to   { transform:translateY(-14px) rotate(6deg) scale(1.1); }
+}
+
+/* Section header helpers */
+.stage-dot-indicator {
+  display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.stage-section-label {
+  font-size:.72rem;font-weight:800;color:#6b7280;
+  text-transform:uppercase;letter-spacing:.08em;
+}
+
+/* ── Stage tracker pipeline bar ─────────────── */
+.stage-tracker {
+  display:flex;align-items:center;margin-top:14px;
+}
+.stage-step {
+  flex:1;display:flex;flex-direction:column;align-items:center;position:relative;
+}
+.stage-conn {
+  flex:1;height:2px;background:var(--border);margin-bottom:20px;transition:.3s;
+}
+.stage-conn.active { background:var(--brand); }
+.stage-conn.green  { background:#10b981; }
+.stage-node {
+  width:20px;height:20px;border-radius:50%;
+  border:2.5px solid var(--border);background:white;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;transition:.2s;flex-shrink:0;
+}
+.stage-step.s-done  .stage-node { background:var(--brand);border-color:var(--brand); }
+.stage-step.s-current .stage-node { border-color:var(--brand);box-shadow:0 0 0 4px rgba(26,86,219,.15); }
+.stage-step.s-offer .stage-node   { background:#10b981;border-color:#10b981; }
+.stage-tick { display:none;width:10px;height:10px; }
+.stage-step.s-done .stage-tick,
+.stage-step.s-offer .stage-tick { display:block; }
+.stage-lbl {
+  font-size:.58rem;font-weight:700;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.06em;margin-top:4px;text-align:center;white-space:nowrap;
+}
+.stage-step.s-done    .stage-lbl { color:var(--brand); }
+.stage-step.s-current .stage-lbl { color:var(--brand); }
+.stage-step.s-offer   .stage-lbl { color:#059669; }
+
+/* Status badge variants */
+.badge-offer     { background:rgba(16,185,129,.15); color:#065f46; border-color:rgba(16,185,129,.4); }
+.badge-interview { background:rgba(139,92,246,.1);  color:#7c3aed; border-color:rgba(139,92,246,.3); }
+.badge-review    { background:rgba(245,158,11,.1);  color:#b45309; border-color:rgba(245,158,11,.3); }
+.badge-applied   { background:rgba(59,130,246,.1);  color:#2563eb; border-color:rgba(59,130,246,.3); }
+.badge-closed    { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; }
+
+/* Offer node + label overrides */
+.node-offer { background:#10b981; border-color:#10b981; }
+.lbl-offer  { color:#059669; }
+
+/* Avatar circle */
+.app-avatar {
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1rem;color:white;
+  background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+  overflow:hidden;border:2px solid var(--border);
+}
+.app-avatar img { width:100%;height:100%;object-fit:cover; }
+</style>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     CONFETTI ENGINE + CLOSE
+═══════════════════════════════════════════════════════════════════════ -->
+<script>
+function closeCelebration() {
+  const el = document.getElementById('offerCelebration');
+  if (!el) return;
+  el.style.transition = 'opacity .3s ease';
+  el.style.opacity = '0';
+  document.body.style.overflow = '';  // restore scroll
+  setTimeout(() => el.remove(), 300);
+  try { sessionStorage.setItem('offer_celebrated', '1'); } catch(e){}
+}
+
+// Don't re-fire if already dismissed this session
+(function() {
+  try { if (sessionStorage.getItem('offer_celebrated')) { closeCelebration(); return; } }
+  catch(e){}
+
+  // Lock body scroll while overlay is open
+  document.body.style.overflow = 'hidden';
+
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['#f59e0b','#ef4444','#8b5cf6','#3b82f6','#10b981','#f97316','#ec4899','#06b6d4','#fbbf24'];
+  const TOTAL   = 180;
+  const pieces  = [];
+
+  function Piece() {
+    this.reset = function(fromTop) {
+      this.x  = Math.random() * canvas.width;
+      this.y  = fromTop ? (Math.random() * -200 - 20) : (Math.random() * canvas.height);
+      this.w  = Math.random() * 9 + 5;
+      this.h  = Math.random() * 5 + 3;
+      this.color  = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.speedY = Math.random() * 3 + 1.5;
+      this.speedX = (Math.random() - .5) * 2.5;
+      this.rot    = Math.random() * 360;
+      this.rotV   = (Math.random() - .5) * 9;
+      this.shape  = Math.random() > .45 ? 'rect' : 'circle';
+      this.alpha  = 1;
+    };
+    this.reset(false);
+  }
+
+  for (let i = 0; i < TOTAL; i++) { const p = new Piece(); pieces.push(p); }
+
+  let frame = 0;
+  const MAX_FRAMES = 420; // ~7s at 60fps
+
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const p of pieces) {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x + p.w/2, p.y + p.h/2);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w/2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      p.y   += p.speedY;
+      p.x   += p.speedX;
+      p.rot += p.rotV;
+
+      if (frame > MAX_FRAMES * .6) p.alpha = Math.max(0, p.alpha - .008);
+
+      if (p.y > canvas.height + 20) {
+        if (frame < MAX_FRAMES) p.reset(true);
+      }
+    }
+
+    frame++;
+    if (frame < MAX_FRAMES + 60) requestAnimationFrame(loop);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (document.getElementById('offerCelebration')) loop();
+})();
+</script>
+
 {% endblock %}
