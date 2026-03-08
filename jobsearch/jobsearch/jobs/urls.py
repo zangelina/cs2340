@@ -55,6 +55,13 @@ urlpatterns = [
     path("recruiter/pipeline/data/", views.recruiter_pipeline_data, name="recruiter_pipeline_data"),
     path("recruiter/pipeline/applications/<int:app_id>/status/", views.update_application_status_ajax, name="update_application_status_ajax"),
 
+    path("recruiter/pipeline/", views.recruiter_pipeline, name="recruiter_pipeline"),
+    path("applications/<int:pk>/status/", views.update_application_status_ajax, name="update_application_status_ajax"),
+    path("api/stats/today/", views.stats_today, name="stats_today"),
+
+    # Milestones
+    path("milestones/save/", views.save_milestones, name="save_milestones"),
+
     path("inbox/", views.inbox, name="inbox"),
     path("inbox/<int:convo_id>/", views.conversation_detail, name="conversation_detail"),
     path("inbox/start/<int:application_id>/", views.start_conversation, name="start_conversation"),

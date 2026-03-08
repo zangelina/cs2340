@@ -11,6 +11,8 @@
     <a href="{% url 'job_create' %}" class="btn btn-brand">+ Post a Job</a>
   </div>
 
+  {% include "jobs/_milestones.html" with ms=user_milestones role="recruiter" %}
+
   {% if jobs %}
     {% for job in jobs %}
     <div class="js-card js-card-hover mb-2">

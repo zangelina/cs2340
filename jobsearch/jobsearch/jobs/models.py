@@ -94,7 +94,7 @@ class JobSeekerProfile(models.Model):
     distance_unit = models.CharField(
         max_length=2, choices=DistanceUnit.choices, default=DistanceUnit.MILES
     )
-
+    
     # Privacy toggles
     is_public = models.BooleanField(default=True)
     show_photo = models.BooleanField(default=True)
@@ -112,6 +112,23 @@ class JobSeekerProfile(models.Model):
     show_phone = models.BooleanField(default=False)
     show_email = models.BooleanField(default=True)
     show_featured = models.BooleanField(default=True)
+
+    # Milestone goals
+    goal_applications = models.PositiveIntegerField(default=10, help_text="Target number of applications to submit")
+    goal_offers       = models.PositiveIntegerField(default=1,  help_text="Target number of offers to receive")
+
+    # Unlockable background (unlocked when any milestone is hit)
+    background_image  = models.ImageField(upload_to="backgrounds/", blank=True, null=True)
+    background_opacity = models.FloatField(default=0.15, help_text="Overlay opacity 0.0–1.0")
+
+    # ── Add these fields to RecruiterProfile ─────────────────────────────
+    goal_reviews      = models.PositiveIntegerField(default=20, help_text="Target applications to review")
+    goal_offers_sent  = models.PositiveIntegerField(default=5,  help_text="Target offers to send")
+    goal_filled       = models.PositiveIntegerField(default=3,  help_text="Target job postings filled")
+
+    # background unlock same as seeker
+    background_image   = models.ImageField(upload_to="backgrounds/", blank=True, null=True)
+    background_opacity = models.FloatField(default=0.15)
 
     def skills_list(self):
         return [s.strip() for s in self.skills.split(",") if s.strip()]
@@ -170,6 +187,11 @@ class RecruiterProfile(models.Model):
     company_name = models.CharField(max_length=200)
     company_website = models.URLField(blank=True)
     bio = models.TextField(blank=True)
+    goal_reviews       = models.PositiveIntegerField(default=20)
+    goal_offers_sent   = models.PositiveIntegerField(default=5)
+    goal_filled        = models.PositiveIntegerField(default=3)
+    background_image   = models.ImageField(upload_to="backgrounds/", blank=True, null=True)
+    background_opacity = models.FloatField(default=0.15)
 
     def __str__(self):
         return f"{self.user.username} — {self.company_name}"

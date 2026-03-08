@@ -93,6 +93,9 @@
      MAIN PAGE
 ═══════════════════════════════════════════════════════════════════════ -->
 <div class="container py-5" style="max-width:900px;min-height:100vh;">
+
+  {% include "jobs/_milestones.html" with ms=user_milestones role="seeker" %}
+
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold">My Applications</h2>
     <a href="{% url 'job_list' %}" class="btn btn-brand btn-sm">Browse Jobs</a>

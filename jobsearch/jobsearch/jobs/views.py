@@ -13,6 +13,10 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Count
 import datetime
+import json
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+
+
 
 #Neal
 from django.utils import timezone
@@ -68,8 +72,14 @@ def home(request):
                 else:
                     job.match_score = 0
 
-    return render(request, "jobs/home.html", {"jobs": jobs})
+    milestones = None
+    if request.user.is_authenticated:
+        if request.user.is_job_seeker():
+            milestones = get_seeker_milestones(request.user)
+        elif request.user.is_recruiter():
+            milestones = get_recruiter_milestones(request.user)
 
+    return render(request, "jobs/home.html", {"jobs": jobs, "user_milestones": milestones})
 
 # ── Custom login redirect ──────────────────────────────
 
@@ -231,10 +241,10 @@ def my_applications(request):
         status_counts[a.status] = status_counts.get(a.status, 0) + 1
 
     return render(request, "jobs/my_applications.html", {
-        "applications": apps,
-        "status_counts": status_counts,
-    })
-
+    "applications": apps,
+    "status_counts": status_counts,
+    "user_milestones": get_seeker_milestones(request.user),
+})
 
 # ── Recruiter CRUD ────────────────────────────────────
 
@@ -243,7 +253,10 @@ def recruiter_dashboard(request):
     if not request.user.is_recruiter():
         return redirect("home")
     jobs = JobPosting.objects.filter(recruiter=request.user)
-    return render(request, "jobs/recruiter_dashboard.html", {"jobs": jobs})
+    return render(request, "jobs/recruiter_dashboard.html", {
+    "jobs": jobs,
+    "user_milestones": get_recruiter_milestones(request.user),
+})
 
 @login_required
 def recruiter_profile(request):
@@ -951,3 +964,105 @@ def stats_today(request):
         "offers_today":       offers_today,
         "top_skills":         top_skills,
     })
+
+
+
+# ── Helper: compute seeker milestone progress ─────────────────────────
+def get_seeker_milestones(user):
+    """Returns milestone data dict for a job seeker."""
+    profile = getattr(user, 'seeker_profile', None)
+    if not profile:
+        return None
+
+    apps_count   = Application.objects.filter(applicant=user).count()
+    offers_count = Application.objects.filter(applicant=user, status='offer').count()
+
+    goal_apps    = profile.goal_applications or 10
+    goal_offers  = profile.goal_offers or 1
+
+    apps_pct     = min(100, round(apps_count  / goal_apps   * 100))
+    offers_pct   = min(100, round(offers_count / goal_offers * 100))
+
+    any_unlocked = apps_pct >= 100 or offers_pct >= 100
+
+    return {
+        'apps_count':   apps_count,
+        'goal_apps':    goal_apps,
+        'apps_pct':     apps_pct,
+        'offers_count': offers_count,
+        'goal_offers':  goal_offers,
+        'offers_pct':   offers_pct,
+        'unlocked':     any_unlocked,
+        'background':   profile.background_image.url if (any_unlocked and profile.background_image) else None,
+        'bg_opacity':   profile.background_opacity,
+    }
+
+
+# ── Helper: compute recruiter milestone progress ──────────────────────
+def get_recruiter_milestones(user):
+    """Returns milestone data dict for a recruiter."""
+    profile = getattr(user, 'recruiter_profile', None)
+    if not profile:
+        return None
+
+    reviewed_count = Application.objects.filter(
+        job__recruiter=user
+    ).exclude(status='applied').count()
+
+    offers_sent = Application.objects.filter(
+        job__recruiter=user, status='offer'
+    ).count()
+
+    filled_count = JobPosting.objects.filter(
+        recruiter=user, is_active=False
+    ).count()
+
+    goal_reviews = profile.goal_reviews or 20
+    goal_offers  = profile.goal_offers_sent or 5
+    goal_filled  = profile.goal_filled or 3
+
+    reviews_pct = min(100, round(reviewed_count / goal_reviews * 100))
+    offers_pct  = min(100, round(offers_sent    / goal_offers  * 100))
+    filled_pct  = min(100, round(filled_count   / goal_filled  * 100))
+
+    any_unlocked = reviews_pct >= 100 or offers_pct >= 100 or filled_pct >= 100
+
+    return {
+        'reviewed_count': reviewed_count, 'goal_reviews': goal_reviews, 'reviews_pct': reviews_pct,
+        'offers_sent':    offers_sent,    'goal_offers':  goal_offers,  'offers_pct':  offers_pct,
+        'filled_count':   filled_count,   'goal_filled':  goal_filled,  'filled_pct':  filled_pct,
+        'unlocked':       any_unlocked,
+        'background':     profile.background_image.url if (any_unlocked and profile.background_image) else None,
+        'bg_opacity':     profile.background_opacity,
+    }
+
+
+# ── View: save milestone goals (AJAX POST) ────────────────────────────
+# URL: path("milestones/save/", views.save_milestones, name="save_milestones")
+@login_required
+@ensure_csrf_cookie 
+def save_milestones(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    if request.user.is_job_seeker():
+        profile = request.user.seeker_profile
+        profile.goal_applications = int(request.POST.get('goal_applications', 10))
+        profile.goal_offers       = int(request.POST.get('goal_offers', 1))
+        # Background upload
+        if 'background_image' in request.FILES:
+            profile.background_image = request.FILES['background_image']
+        profile.background_opacity = float(request.POST.get('background_opacity', 0.15))
+        profile.save()
+
+    elif request.user.is_recruiter():
+        profile = request.user.recruiter_profile
+        profile.goal_reviews    = int(request.POST.get('goal_reviews', 20))
+        profile.goal_offers_sent = int(request.POST.get('goal_offers_sent', 5))
+        profile.goal_filled     = int(request.POST.get('goal_filled', 3))
+        if 'background_image' in request.FILES:
+            profile.background_image = request.FILES['background_image']
+        profile.background_opacity = float(request.POST.get('background_opacity', 0.15))
+        profile.save()
+
+    return JsonResponse({'ok': True})

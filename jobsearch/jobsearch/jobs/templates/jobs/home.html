@@ -134,6 +134,11 @@
 {% endif %}
 
 <div class="container py-5">
+
+  {% if user.is_authenticated %}
+  {% include "jobs/_milestones.html" with ms=user_milestones role="seeker" %}
+  {% endif %}
+
   <div class="row align-items-center mb-5 g-5">
 
     <!-- Left: hero -->

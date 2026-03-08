@@ -410,6 +410,13 @@
     }
     .notes-clear-btn:hover { color: var(--brand); }
 
+    /* ── Site background image ──────────────────────── */
+    .site-bg-image {
+      position: fixed; inset: 0;
+      background-size: cover; background-attachment: fixed; background-position: center;
+      pointer-events: none; z-index: 0;
+    }
+
     /* ── Responsive ──────────────────────────────── */
     @media (max-width: 575px) {
       #themePanelInner { width: 240px; }
@@ -417,7 +424,15 @@
   </style>
 </head>
 
-<body>
+<body{% if milestones and milestones.background %} style="background-image:url('{{ milestones.background }}');background-size:cover;background-attachment:fixed;background-position:center;"{% endif %}>
+{% if milestones and milestones.background %}
+{% endif %}
+
+{% if user_milestones and user_milestones.background %}
+<div class="site-bg-image"
+     style="background-image:url('{{ user_milestones.background }}');"
+     data-opacity="{{ user_milestones.bg_opacity }}"></div>
+{% endif %}
 
 <!-- ════════════════════════════════════════════════════════
      NAVBAR
@@ -722,6 +737,11 @@ document.addEventListener('click', e => {
     && !document.getElementById('themeScrim').contains(e.target)) {
     closePanel();
   }
+});
+
+// Apply site background opacity from data attribute
+document.querySelectorAll('.site-bg-image').forEach(el => {
+  el.style.opacity = el.dataset.opacity || '0.15';
 });
 
 // ════════════════════════════════════════════════════════

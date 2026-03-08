@@ -1,0 +1,259 @@
+{# jobs/_milestones.html — pass ms=user_milestones and role="seeker" or "recruiter" #}
+  {% if ms %}
+  <div class="milestone-bar js-card mb-4" id="milestoneBar">
+  
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <span style="font-size:1.2rem;">🏆</span>
+        <div>
+          <div class="fw-bold" style="font-size:.92rem;">Your Milestones</div>
+          {% if ms.unlocked %}
+          <div class="small" style="color:#10b981;font-weight:700;">🎉 Milestone unlocked! Custom background available.</div>
+          {% else %}
+          <div class="small text-muted">Hit a goal to unlock a custom site background</div>
+          {% endif %}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openMilestoneModal()"
+              style="font-size:.75rem;border-radius:8px;">
+        ⚙ Set Goals
+      </button>
+    </div>
+  
+    <!-- Progress bars -->
+    <div class="milestone-tracks">
+  
+      {% if role == "seeker" %}
+      <div class="milestone-track">
+        <div class="milestone-track-label">
+          <span>📨 Applications</span>
+          <span class="milestone-fraction">{{ ms.apps_count }} / {{ ms.goal_apps }}</span>
+        </div>
+        <div class="milestone-progress-bg">
+          <div class="milestone-progress-fill {% if ms.apps_pct >= 100 %}fill-complete{% endif %}" data-pct="{{ ms.apps_pct }}"></div>
+        </div>
+      </div>
+  
+      <div class="milestone-track">
+        <div class="milestone-track-label">
+          <span>🎉 Offers received</span>
+          <span class="milestone-fraction">{{ ms.offers_count }} / {{ ms.goal_offers }}</span>
+        </div>
+        <div class="milestone-progress-bg">
+          <div class="milestone-progress-fill {% if ms.offers_pct >= 100 %}fill-complete{% endif %}" data-pct="{{ ms.offers_pct }}"></div>
+        </div>
+      </div>
+  
+      {% else %}
+      <div class="milestone-track">
+        <div class="milestone-track-label">
+          <span>👀 Applications reviewed</span>
+          <span class="milestone-fraction">{{ ms.reviewed_count }} / {{ ms.goal_reviews }}</span>
+        </div>
+        <div class="milestone-progress-bg">
+          <div class="milestone-progress-fill {% if ms.reviews_pct >= 100 %}fill-complete{% endif %}" data-pct="{{ ms.reviews_pct }}"></div>
+        </div>
+      </div>
+  
+      <div class="milestone-track">
+        <div class="milestone-track-label">
+          <span>🎉 Offers sent</span>
+          <span class="milestone-fraction">{{ ms.offers_sent }} / {{ ms.goal_offers }}</span>
+        </div>
+        <div class="milestone-progress-bg">
+          <div class="milestone-progress-fill {% if ms.offers_pct >= 100 %}fill-complete{% endif %}" data-pct="{{ ms.offers_pct }}"></div>
+        </div>
+      </div>
+  
+      <div class="milestone-track">
+        <div class="milestone-track-label">
+          <span>✅ Jobs filled</span>
+          <span class="milestone-fraction">{{ ms.filled_count }} / {{ ms.goal_filled }}</span>
+        </div>
+        <div class="milestone-progress-bg">
+          <div class="milestone-progress-fill {% if ms.filled_pct >= 100 %}fill-complete{% endif %}" data-pct="{{ ms.filled_pct }}"></div>
+        </div>
+      </div>
+      {% endif %}
+  
+    </div>
+  </div>
+  
+  
+  <!-- ── Milestone Modal ──────────────────────────────────────────────── -->
+  <div id="milestoneModal" style="
+    display:none;position:fixed;inset:0;z-index:9000;
+    background:rgba(0,0,0,.45);backdrop-filter:blur(4px);
+    align-items:center;justify-content:center;">
+  
+    <div class="js-card" style="width:90%;max-width:460px;position:relative;animation:popIn .3s cubic-bezier(.34,1.56,.64,1) both;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">⚙ Set Milestones</h5>
+        <button onclick="closeMilestoneModal()"
+                style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text-muted);">✕</button>
+      </div>
+  
+      <form id="milestoneForm" enctype="multipart/form-data">
+        {% csrf_token %}
+  
+        {% if role == "seeker" %}
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold small">Applications goal</label>
+            <input type="number" name="goal_applications" class="form-control"
+                   value="{{ ms.goal_apps }}" min="1" max="999">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold small">Offers goal</label>
+            <input type="number" name="goal_offers" class="form-control"
+                   value="{{ ms.goal_offers }}" min="1" max="99">
+          </div>
+        </div>
+        {% else %}
+        <div class="row g-3 mb-3">
+          <div class="col-4">
+            <label class="form-label fw-semibold small">Reviews goal</label>
+            <input type="number" name="goal_reviews" class="form-control"
+                   value="{{ ms.goal_reviews }}" min="1">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold small">Offers goal</label>
+            <input type="number" name="goal_offers_sent" class="form-control"
+                   value="{{ ms.goal_offers }}" min="1">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold small">Filled goal</label>
+            <input type="number" name="goal_filled" class="form-control"
+                   value="{{ ms.goal_filled }}" min="1">
+          </div>
+        </div>
+        {% endif %}
+  
+        {% if ms.unlocked %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">🎨 Custom background image
+            <span class="ms-1 text-success fw-bold">— Unlocked!</span>
+          </label>
+          <input type="file" name="background_image" class="form-control" accept="image/*"
+                 onchange="previewBg(this)">
+          {% if ms.background %}
+          <div class="mt-2 small text-muted">Current background is set.
+            <a href="{{ ms.background }}" target="_blank">Preview</a>
+          </div>
+          {% endif %}
+          <div class="mt-2" id="bgPreviewWrap" style="display:none;">
+            <img id="bgPreview" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+          </div>
+        </div>
+  
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Background opacity
+            <span id="opacityVal">{{ ms.bg_opacity }}</span>
+          </label>
+          <input type="range" name="background_opacity" class="form-range"
+                 min="0.05" max="0.6" step="0.05"
+                 value="{{ ms.bg_opacity }}"
+                 oninput="document.getElementById('opacityVal').textContent=this.value">
+        </div>
+        {% else %}
+        <div class="alert mb-3" style="background:var(--brand-light);border:1px solid var(--brand);border-radius:10px;font-size:.82rem;">
+          🔒 Hit any milestone to unlock custom background upload.
+        </div>
+        {% endif %}
+  
+        <div class="d-flex gap-2 justify-content-end">
+          <button type="button" onclick="closeMilestoneModal()" class="btn btn-ghost btn-sm">Cancel</button>
+          <button type="button" onclick="saveMilestones()" class="btn btn-brand btn-sm">Save Goals</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  
+  <!-- ── Styles ───────────────────────────────────────────────────────── -->
+  <style>
+  .milestone-bar { border-left: 3px solid var(--brand); }
+  
+  .milestone-tracks { display: flex; flex-direction: column; gap: 10px; }
+  
+  .milestone-track-label {
+    display: flex; justify-content: space-between;
+    font-size: .75rem; font-weight: 700; margin-bottom: 4px;
+    color: var(--text);
+  }
+  .milestone-fraction { color: var(--text-muted); font-weight: 600; }
+  
+  .milestone-progress-bg {
+    height: 10px; background: var(--border);
+    border-radius: 999px; overflow: hidden;
+  }
+  .milestone-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand), hsl(var(--brand-h,220),80%,60%));
+    border-radius: 999px;
+    width: 0%;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .fill-complete {
+    background: linear-gradient(90deg, #10b981, #34d399);
+    box-shadow: 0 0 8px rgba(16,185,129,.4);
+  }
+  </style>
+  
+  
+  <!-- ── Scripts ──────────────────────────────────────────────────────── -->
+  <script>
+  // Animate bars on load
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.milestone-progress-fill').forEach(el => {
+      const target = el.dataset.pct + '%';
+      el.style.width = '0%';
+      setTimeout(() => { el.style.width = target; }, 100);
+    });
+  });
+  
+  function openMilestoneModal() {
+    const m = document.getElementById('milestoneModal');
+    m.style.display = 'flex';
+  }
+  function closeMilestoneModal() {
+    document.getElementById('milestoneModal').style.display = 'none';
+  }
+  
+  function previewBg(input) {
+    if (!input.files || !input.files[0]) return;
+    const wrap = document.getElementById('bgPreviewWrap');
+    const img  = document.getElementById('bgPreview');
+    img.src = URL.createObjectURL(input.files[0]);
+    wrap.style.display = 'block';
+  }
+  
+  async function saveMilestones() {
+    const form = document.getElementById('milestoneForm');
+    const fd   = new FormData(form);
+    // Get CSRF token from cookie, not FormData, so it works with multipart
+    const csrf = document.cookie.split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('csrftoken='))
+      ?.split('=')[1] || fd.get('csrfmiddlewaretoken');
+    try {
+      const res = await fetch('/milestones/save/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+      });
+      if (res.ok) {
+        closeMilestoneModal();
+        location.reload();
+      }
+    } catch(e) { console.error(e); }
+  }
+  
+  // Close modal on backdrop click
+  document.getElementById('milestoneModal').addEventListener('click', function(e) {
+    if (e.target === this) closeMilestoneModal();
+  });
+  </script>
+  
+  {% endif %}
