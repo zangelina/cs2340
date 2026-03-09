@@ -8,7 +8,16 @@
       <h2 class="fw-bold mb-1">Search Candidates</h2>
       <div class="text-muted">Filter by skills, location, and projects to find the right fits quickly.</div>
     </div>
-    <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost">Back</a>
+  
+    <div class="d-flex gap-2">
+      <a href="{% url 'candidate_cluster_map' %}" class="btn btn-outline-primary">
+        View Candidate Map
+      </a>
+  
+      <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost">
+        Back
+      </a>
+    </div>
   </div>
 
   <div class="card shadow-sm border-0 mb-4">

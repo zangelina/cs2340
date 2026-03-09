@@ -1066,3 +1066,22 @@ def save_milestones(request):
         profile.save()
 
     return JsonResponse({'ok': True})
+
+
+def candidate_cluster_map(request):
+    import json
+    from .models import JobSeekerProfile
+
+    seekers = JobSeekerProfile.objects.exclude(location__isnull=True).exclude(location__exact="")
+
+    candidates = []
+    for s in seekers:
+        #print("USER:", s.user.username, "| LOCATION:", s.location)
+        candidates.append({
+            "name": s.user.username,
+            "location": s.location,
+        })
+
+    return render(request, "jobs/candidate_cluster_map.html", {
+        "candidates_json": json.dumps(candidates)
+    })
