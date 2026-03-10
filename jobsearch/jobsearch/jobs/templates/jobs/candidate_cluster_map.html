@@ -1,0 +1,44 @@
+{% extends "jobs/base.html" %}
+
+{% block content %}
+<h2>Candidate Locations</h2>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div id="map" style="height: 500px; width: 100%;"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const map = L.map("map").setView([39.5, -98.35], 4);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const candidateData = JSON.parse('{{ candidates_json|escapejs }}');
+
+    candidateData.forEach(function(c) {
+        if (!c.location) return;
+
+        fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(c.location))
+            .then(response => response.json())
+            .then(results => {
+                if (results.length > 0) {
+                    const lat = parseFloat(results[0].lat);
+                    const lon = parseFloat(results[0].lon);
+
+                    L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup("<b>" + c.name + "</b><br>" + c.location);
+                }
+            })
+            .catch(error => console.log("Geocoding error:", error));
+    });
+});
+</script>
+{% endblock %}
