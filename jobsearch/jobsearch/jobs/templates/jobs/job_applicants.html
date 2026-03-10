@@ -16,7 +16,7 @@
       <span class="js-badge js-badge-skill" style="font-size:.9rem;padding:8px 14px;">
         {{ applications|length }} applicant{{ applications|length|pluralize }}
       </span>
-      <a href="{% url 'recruiter_pipeline' %}" class="btn btn-brand btn-sm">📊 Kanban View</a>
+      <a href="{% url 'recruiter_pipeline' %}?job={{ job.pk }}" class="btn btn-brand btn-sm">📊 Kanban View</a>
     </div>
   </div>
 
@@ -67,18 +67,6 @@
                 </div>
               {% endif %}
 
-              <!-- Resume download -->
-              {% if sp and sp.resume %}
-              <div class="mt-2">
-                <a href="{{ sp.resume.url }}" target="_blank"
-                   class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1"
-                   style="font-size:.75rem;border-radius:8px;">
-                  📄 Download Resume
-                </a>
-              </div>
-              {% endif %}
-            {% endwith %}
-
             <div class="text-muted small mt-2">Applied {{ app.created_at|date:"M j, Y" }}</div>
 
             {% if app.note %}
@@ -86,6 +74,12 @@
             {% endif %}
 
             <div class="mt-2 d-flex gap-2 flex-wrap">
+              {% if sp and sp.resume %}
+                <a href="{{ sp.resume.url }}" target="_blank"
+                   class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1">
+                  📄 Download Resume
+                </a>
+              {% endif %}
               <a class="btn btn-ghost btn-sm" href="{% url 'view_candidate' app.applicant.pk %}">View Profile</a>
               <a class="btn btn-ghost btn-sm" href="{% url 'start_conversation' app.id %}">💬 Message</a>
               <a class="btn btn-ghost btn-sm"
@@ -93,6 +87,7 @@
                 ✉️ Email
               </a>
             </div>
+            {% endwith %}
           </div>
         </div>
 

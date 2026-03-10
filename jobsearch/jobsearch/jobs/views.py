@@ -889,8 +889,10 @@ def start_conversation_with_candidate(request, user_id):
 # ─────────────────────────────────────────────────────────────────────
 @login_required
 def recruiter_pipeline(request):
-    if not request.user.is_recruiter:
+    if not request.user.is_recruiter():
         return redirect("home")
+    selected_job = None
+    selected_job_id = (request.GET.get("job") or "").strip()
 
     # All applications for jobs owned by this recruiter
     applications = (
@@ -899,6 +901,13 @@ def recruiter_pipeline(request):
         .select_related("applicant", "applicant__seeker_profile", "job")
         .order_by("-created_at")
     )
+
+    if selected_job_id.isdigit():
+        selected_job = JobPosting.objects.filter(
+            pk=int(selected_job_id), recruiter=request.user
+        ).first()
+        if selected_job:
+            applications = applications.filter(job=selected_job)
 
     COLUMNS = [
         ("applied",   "Applied",    "#3b82f6", "📬"),
@@ -911,6 +920,7 @@ def recruiter_pipeline(request):
     return render(request, "jobs/recruiter_pipeline.html", {
         "applications": applications,
         "columns": COLUMNS,
+        "selected_job": selected_job,
     })
 
 
@@ -923,16 +933,18 @@ def recruiter_pipeline(request):
 # ─────────────────────────────────────────────────────────────────────
 @login_required
 def update_application_status_ajax(request, pk):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
     app = get_object_or_404(Application, pk=pk, job__recruiter=request.user)
-    new_status = request.POST.get("status")
-    valid = [s[0] for s in Application.STATUS_CHOICES]
+    new_status = (request.POST.get("status") or "").strip()
+    valid = [s[0] for s in Application.Status.choices]
     if new_status not in valid:
         return JsonResponse({"error": "Invalid status"}, status=400)
     app.status = new_status
     app.save(update_fields=["status"])
-    return JsonResponse({"ok": True, "status": new_status})
+    return JsonResponse({"ok": True, "status": new_status, "app_id": app.pk})
 
 
 # ─────────────────────────────────────────────────────────────────────

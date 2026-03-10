@@ -1,12 +1,5 @@
 {% extends "jobs/base.html" %}
-{% block title %}Applicant Pipeline
-<script>
-document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
-  el.style.color = el.dataset.color;
-});
-</script>
-
-{% endblock %}
+{% block title %}Applicant Pipeline{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-4" style="min-height:100vh;">
@@ -15,9 +8,19 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h2 class="fw-bold mb-0">Applicant Pipeline</h2>
-      <div class="text-muted small">Drag cards between columns to update status instantly</div>
+      <div class="text-muted small">
+        {% if selected_job %}
+          {{ selected_job.title }} at {{ selected_job.company }}
+        {% else %}
+          Drag cards between columns to update status instantly
+        {% endif %}
+      </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      {% if selected_job %}
+      <a href="{% url 'job_applicants' selected_job.pk %}" class="btn btn-ghost btn-sm">← Applicant List</a>
+      <a href="{% url 'recruiter_pipeline' %}" class="btn btn-ghost btn-sm">All Jobs</a>
+      {% endif %}
       <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost btn-sm">← Dashboard</a>
     </div>
   </div>
@@ -27,32 +30,25 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
     {% for status_key, status_label, color, icon in columns %}
     <div class="kanban-col" data-status="{{ status_key }}">
       <div class="kanban-col-header">
-        <div class="kanban-col-title" data-color="{{ color }}">
-          {{ icon }} {{ status_label }}
-        </div>
-        <span class="kanban-col-count" id="count-{{ status_key }}">
-          {{ applications|dictsort:"status"|length }}
-        </span>
+        <div class="kanban-col-title" data-color="{{ color }}">{{ icon }} {{ status_label }}</div>
+        <span class="kanban-col-count" id="count-{{ status_key }}">0</span>
       </div>
       <div class="kanban-cards" id="col-{{ status_key }}">
         {% for app in applications %}
           {% if app.status == status_key %}
           <div class="kanban-card" draggable="true" data-app-id="{{ app.pk }}">
-            <div class="d-flex align-items-start gap-2 mb-1">
+            <div class="d-flex align-items-start gap-2 mb-2">
               {% with sp=app.applicant.seeker_profile %}
               <div class="kanban-avatar">
                 {% if sp and sp.profile_picture and sp.show_photo %}
-                  <img src="{{ sp.profile_picture.url }}" alt="{{ app.applicant.username }}"
-                       style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                  <img src="{{ sp.profile_picture.url }}" alt="{{ app.applicant.username }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                 {% else %}
                   {{ app.applicant.first_name|first|default:app.applicant.username|first|upper }}
                 {% endif %}
               </div>
               {% endwith %}
               <div style="min-width:0;flex:1;">
-                <div class="kanban-card-name">
-                  {{ app.applicant.get_full_name|default:app.applicant.username }}
-                </div>
+                <div class="kanban-card-name">{{ app.applicant.get_full_name|default:app.applicant.username }}</div>
                 <div class="kanban-card-job">{{ app.job.title }}</div>
               </div>
             </div>
@@ -60,21 +56,32 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
               {% if sp and sp.headline and sp.show_headline %}
                 <div class="kanban-card-headline">{{ sp.headline }}</div>
               {% endif %}
+              {% if sp and sp.skills and sp.show_skills %}
+              <div class="kanban-skills mt-2">
+                {% for skill in sp.skills_list|slice:":4" %}
+                  <span class="js-badge js-badge-skill kanban-skill-badge">{{ skill }}</span>
+                {% endfor %}
+                {% if sp.skills_list|length > 4 %}
+                  <span class="js-badge kanban-skill-more">+{{ sp.skills_list|length|add:"-4" }}</span>
+                {% endif %}
+              </div>
+              {% endif %}
             {% endwith %}
             <div class="d-flex justify-content-between align-items-center mt-2">
               <span class="kanban-card-date">{{ app.created_at|date:"M j" }}</span>
-              <a href="{% url 'view_candidate' app.applicant.pk %}"
-                 class="btn btn-ghost btn-sm py-0 px-2"
-                 style="font-size:.65rem;"
-                 onclick="event.stopPropagation();">View →</a>
+              <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
+                {% with sp=app.applicant.seeker_profile %}
+                  {% if sp and sp.resume %}
+                  <a href="{{ sp.resume.url }}" target="_blank" class="btn btn-ghost btn-sm py-0 px-2 kanban-mini-btn" onclick="event.stopPropagation();">Resume</a>
+                  {% endif %}
+                {% endwith %}
+                <a href="{% url 'view_candidate' app.applicant.pk %}" class="btn btn-ghost btn-sm py-0 px-2 kanban-mini-btn" onclick="event.stopPropagation();">View →</a>
+              </div>
             </div>
           </div>
           {% endif %}
         {% endfor %}
-        <div class="kanban-empty" id="empty-{{ status_key }}"
-          {% for app in applications %}{% if app.status == status_key %}style="display:none;"{% endif %}{% endfor %}>
-          Drop here
-        </div>
+        <div class="kanban-empty" id="empty-{{ status_key }}">Drop here</div>
       </div>
     </div>
     {% endfor %}
@@ -99,12 +106,12 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
 /* ── Column ─────────────────────────────────────────────── */
 .kanban-col {
-  flex: 0 0 240px;
+  flex: 0 0 320px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 16px;
   padding: 14px 10px;
-  min-height: 300px;
+  min-height: 320px;
   transition: border-color .2s, background .2s;
 }
 .kanban-col.drag-over {
@@ -171,16 +178,29 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 .kanban-card-headline { font-size: .7rem; color: var(--text-muted); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
 .kanban-card-date  { font-size: .65rem; color: var(--text-muted); }
 .kanban-avatar {
-  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(135deg, var(--brand), var(--brand-dark));
-  color: white; font-weight: 800; font-size: .75rem;
+  color: white; font-weight: 800; font-size: .8rem;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
 
+.kanban-skills {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+}
+.kanban-skill-badge,
+.kanban-skill-more {
+  font-size:.68rem;
+}
+.kanban-mini-btn {
+  font-size:.65rem;
+}
+
 /* ── Drop placeholder ───────────────────────────────────── */
 .drop-placeholder {
-  height: 72px;
+  height: 118px;
   border: 2px dashed var(--brand);
   border-radius: 12px;
   background: hsl(var(--brand-h,220),60%,96%);
@@ -201,8 +221,12 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
 <script>
 (function() {
-  const CSRF = document.querySelector('#csrfForm [name=csrfmiddlewaretoken]').value;
+  document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
+    el.style.color = el.dataset.color;
+  });
 
+  const csrfInput = document.querySelector('#csrfForm [name=csrfmiddlewaretoken]');
+  const CSRF = csrfInput ? csrfInput.value : '';
   let dragged      = null;
   let fromCol      = null;
   let placeholder  = null;
@@ -210,6 +234,7 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
   /* ── Attach drag to all cards ──────────────────────────── */
   function initCards() {
     document.querySelectorAll('.kanban-card').forEach(attachCard);
+    document.querySelectorAll('.kanban-col').forEach(updateEmpty);
     updateAllCounts();
   }
 
@@ -226,10 +251,11 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
     card.addEventListener('dragend', () => {
       card.classList.remove('dragging');
-      placeholder?.remove();
+      if (placeholder) placeholder.remove();
       placeholder = null;
       dragged = null;
       fromCol = null;
+      document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
     });
   }
 
@@ -239,7 +265,6 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
     col.addEventListener('dragover', e => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
       col.classList.add('drag-over');
 
       // Show placeholder at correct position
@@ -253,7 +278,6 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
     col.addEventListener('dragleave', e => {
       if (!col.contains(e.relatedTarget)) {
         col.classList.remove('drag-over');
-        placeholder?.remove();
       }
     });
 
@@ -268,35 +292,43 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
       // Move card in DOM
       const after = getAfterElement(cardsEl, e.clientY);
-      placeholder?.remove();
+      if (placeholder) placeholder.remove();
       if (after == null) cardsEl.appendChild(dragged);
       else cardsEl.insertBefore(dragged, after);
 
       // Hide/show empty states
       updateEmpty(col);
       if (fromCol && fromCol !== col) updateEmpty(fromCol);
-
+      updateAllCounts();
       if (!sameCol) {
         // Flash
         dragged.classList.add('card-flash');
         setTimeout(() => dragged.classList.remove('card-flash'), 600);
 
-        updateAllCounts();
-
         // Persist via AJAX
         const appId = dragged.dataset.appId;
         try {
-          await fetch(`/applications/${appId}/status/`, {
+          const resp = await fetch(`/applications/${appId}/status/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-CSRFToken': CSRF,
-              'X-Requested-With': 'XMLHttpRequest',
+              'X-Requested-With': 'XMLHttpRequest'
             },
-            body: `status=${newStatus}`
+            body: `status=${encodeURIComponent(newStatus)}`
           });
-        } catch(err) {
-          console.error('Status update failed', err);
+          if (!resp.ok) {
+            throw new Error('Status update failed');
+          }
+        } catch (err) {
+          console.error(err);
+          if (fromCol) {
+            const fromCards = fromCol.querySelector('.kanban-cards');
+            fromCards.appendChild(dragged);
+            updateEmpty(col);
+            updateEmpty(fromCol);
+            updateAllCounts();
+          }
         }
       }
     });
@@ -310,7 +342,7 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
       const offset = y - box.top - box.height / 2;
       if (offset < 0 && offset > closest.offset) return { offset, element: child };
       return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element ?? null;
+    }, { offset: Number.NEGATIVE_INFINITY }).element || null;
   }
 
   function updateEmpty(col) {
@@ -332,13 +364,6 @@ document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
 
   initCards();
 })();
-</script>
-
-
-<script>
-document.querySelectorAll('.kanban-col-title[data-color]').forEach(el => {
-  el.style.color = el.dataset.color;
-});
 </script>
 
 {% endblock %}
