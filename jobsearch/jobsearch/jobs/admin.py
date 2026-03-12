@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.http import HttpResponse import csv
+from django.http import HttpResponse 
+import csv
 from .models import CustomUser, JobPosting
 
 #Neal
