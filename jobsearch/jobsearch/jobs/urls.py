@@ -26,6 +26,9 @@ urlpatterns = [
     path("recruiter/applications/<int:app_id>/status/", views.update_application_status, name="update_application_status"),
     path("recruiter/candidate/<int:user_id>/", views.view_candidate, name="view_candidate"),
     path("recruiter/candidates/", views.recruiter_candidate_search, name="recruiter_candidate_search"),
+    path("recruiter/saved-searches/", views.saved_searches_list, name="saved_searches_list"),
+    path("recruiter/saved-searches/<int:search_id>/delete/", views.delete_saved_search, name="delete_saved_search"),
+    path("recruiter/saved-searches/<int:search_id>/mark-read/", views.mark_search_notifications_read, name="mark_search_notifications_read"),
     path("recruiter/profile/", views.recruiter_profile, name="recruiter_profile"),
     path("recruiter/profile/edit/", views.recruiter_profile_edit, name="recruiter_profile_edit"),
 

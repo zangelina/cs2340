@@ -8,43 +8,58 @@
       <h2 class="fw-bold mb-1">Search Candidates</h2>
       <div class="text-muted">Filter by skills, location, and projects to find the right fits quickly.</div>
     </div>
-  
-    <div class="d-flex gap-2">
+
+    <div class="d-flex gap-2 align-items-center">
       <a href="{% url 'candidate_cluster_map' %}" class="btn btn-outline-primary">
         View Candidate Map
       </a>
-  
+
+      <!-- Saved Searches button with notification badge -->
+      <button class="btn btn-outline-secondary position-relative" id="savedSearchesBtn"
+              onclick="openSavedSearchesModal()">
+        Saved Searches
+        <span id="savedSearchesBadge"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style="display:none; font-size:.65rem;">
+          0
+        </span>
+      </button>
+
       <a href="{% url 'recruiter_dashboard' %}" class="btn btn-ghost">
         Back
       </a>
     </div>
   </div>
 
+  <!-- Search form -->
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
       <form method="get" class="row g-3 align-items-end">
         {% csrf_token %}
         <div class="col-12 col-md-4">
           <label class="form-label text-muted small">Skills</label>
-          <input type="text" name="skills" value="{{ request.GET.skills }}" class="form-control" placeholder="e.g., python, django">
+          <input type="text" name="skills" value="{{ request.GET.skills }}" class="form-control"
+                 placeholder="e.g., python, django">
         </div>
         <div class="col-12 col-md-4">
           <label class="form-label text-muted small">Location</label>
-          <input type="text" name="location" value="{{ request.GET.location }}" class="form-control" placeholder="e.g., Atlanta">
+          <input type="text" name="location" value="{{ request.GET.location }}" class="form-control"
+                 placeholder="e.g., Atlanta">
         </div>
         <div class="col-12 col-md-4">
           <label class="form-label text-muted small">Projects</label>
-          <input type="text" name="projects" value="{{ request.GET.projects }}" class="form-control" placeholder="e.g., portfolio, capstone">
+          <input type="text" name="projects" value="{{ request.GET.projects }}" class="form-control"
+                 placeholder="e.g., portfolio, capstone">
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label text-muted small">Saved Search Name (optional)</label>
-          <input type="text" name="save_name" class="form-control" placeholder="e.g., Atlanta Python interns">
+          <input type="text" name="save_name" class="form-control"
+                 placeholder="e.g., Atlanta Python interns">
         </div>
 
         <div class="col-12 d-flex gap-2 justify-content-end">
           <a href="{% url 'recruiter_candidate_search' %}" class="btn btn-outline-secondary">Clear</a>
           <button type="submit" class="btn btn-primary">Search</button>
-        
           <button type="submit"
                   formmethod="post"
                   name="action"
@@ -94,10 +109,314 @@
         </a>
       {% endfor %}
     </div>
+
+    <hr class="my-5">
+
+    <!-- Kanban pipeline -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <div class="fw-bold fs-4 mb-1">Applicant Pipeline</div>
+            <div class="text-muted">Drag applicants across columns to update their stage.</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="text-muted small fw-bold">JOB</div>
+            <select id="kbJobFilter" class="form-select form-select-sm" style="min-width: 220px;">
+              <option value="all">All jobs</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4" id="kanbanBoard">
+          <div id="kanbanColumns" class="d-flex flex-column gap-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .kb-col { border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:14px; background:#fff; }
+      .kb-col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+      .kb-col-title { font-size:.75rem; letter-spacing:.08em; color:#6c757d; font-weight:700; text-transform:uppercase; }
+      .kb-count { background:#f1f3f5; border-radius:999px; padding:2px 10px; font-size:.75rem; color:#495057; font-weight:700; }
+      .kb-dropzone { min-height:86px; border-radius:12px; padding:8px; display:flex; flex-direction:row; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+      .kb-dropzone.drag-over { outline:2px dashed rgba(13,110,253,.35); background:rgba(13,110,253,.03); }
+      .kb-empty { color:#6c757d; font-size:.85rem; padding:6px 4px; }
+      .kb-card { border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:12px; background:#fff; cursor:grab; user-select:none; width:240px; }
+      .kb-card:active { cursor:grabbing; }
+      .kb-card .name { font-weight:700; }
+      .kb-card .line { color:#495057; font-size:.9rem; }
+      .kb-card .small { font-size:.8rem; color:#6c757d; }
+      .kb-card .btn { padding:.2rem .55rem; font-size:.8rem; border-radius:999px; }
+      .kb-row-split { border-top:1px solid rgba(0,0,0,.08); margin:0; }
+    </style>
+
+    <script>
+      (function () {
+        const STATUSES = [
+          { key:"applied",   label:"Applied" },
+          { key:"in_review", label:"In Review" },
+          { key:"interview", label:"Interview" },
+          { key:"offer",     label:"Offer" },
+          { key:"closed",    label:"Closed" },
+        ];
+        const columnsEl   = document.getElementById("kanbanColumns");
+        const jobFilterEl = document.getElementById("kbJobFilter");
+
+        function getCookie(name) {
+          let v = null;
+          if (document.cookie) {
+            document.cookie.split(";").forEach(c => {
+              c = c.trim();
+              if (c.startsWith(name + "=")) v = decodeURIComponent(c.slice(name.length + 1));
+            });
+          }
+          return v;
+        }
+
+        function makeApplicantCard(app) {
+          const card = document.createElement("div");
+          card.className = "kb-card"; card.draggable = true; card.dataset.appId = app.id;
+          const top = document.createElement("div");
+          top.className = "d-flex justify-content-between align-items-center gap-2 mb-2";
+          const name = document.createElement("div"); name.className = "name"; name.textContent = app.username;
+          const view = document.createElement("a"); view.className = "btn btn-outline-primary btn-sm";
+          view.href = app.view_url; view.textContent = "View";
+          top.appendChild(name); top.appendChild(view);
+          const applied = document.createElement("div"); applied.className = "small mt-2";
+          applied.textContent = "Applied: " + (app.created_at || "");
+          card.appendChild(top);
+          if (app.headline) { const h = document.createElement("div"); h.className = "line"; h.textContent = app.headline; card.appendChild(h); }
+          card.appendChild(applied);
+          card.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", String(app.id)); e.dataTransfer.effectAllowed = "move"; });
+          return card;
+        }
+
+        function buildColumns(data) {
+          while (columnsEl.firstChild) columnsEl.removeChild(columnsEl.firstChild);
+          STATUSES.forEach((st, idx) => {
+            const col = document.createElement("div"); col.className = "kb-col";
+            const header = document.createElement("div"); header.className = "kb-col-header";
+            const title = document.createElement("div"); title.className = "kb-col-title"; title.textContent = st.label;
+            const items = (data.columns && data.columns[st.key]) ? data.columns[st.key] : [];
+            const count = document.createElement("div"); count.className = "kb-count"; count.textContent = String(items.length);
+            header.appendChild(title); header.appendChild(count);
+            const drop = document.createElement("div"); drop.className = "kb-dropzone"; drop.dataset.status = st.key;
+            if (!items.length) { const e = document.createElement("div"); e.className = "kb-empty"; e.textContent = "Drop here"; drop.appendChild(e); }
+            else items.forEach(app => drop.appendChild(makeApplicantCard(app)));
+            drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag-over"); });
+            drop.addEventListener("dragleave", () => drop.classList.remove("drag-over"));
+            drop.addEventListener("drop", e => {
+              e.preventDefault(); drop.classList.remove("drag-over");
+              const appId = e.dataTransfer.getData("text/plain"); if (!appId) return;
+              const card = document.querySelector('.kb-card[data-app-id="' + appId + '"]'); if (!card) return;
+              const prev = card.parentElement;
+              if (prev === drop) return;
+              const prevEmpty = prev ? prev.querySelector(".kb-empty") : null;
+              if (prevEmpty) prevEmpty.remove();
+              const tgtEmpty = drop.querySelector(".kb-empty"); if (tgtEmpty) tgtEmpty.remove();
+              drop.appendChild(card);
+              if (prev && !prev.querySelectorAll(".kb-card").length) { const e2 = document.createElement("div"); e2.className = "kb-empty"; e2.textContent = "Drop here"; prev.appendChild(e2); }
+              [prev, drop].forEach(z => { if (!z) return; const c = z.closest(".kb-col"); if (c) c.querySelector(".kb-count").textContent = String(z.querySelectorAll(".kb-card").length); });
+              updateStatus(appId, drop.dataset.status);
+            });
+            col.appendChild(header); col.appendChild(drop); columnsEl.appendChild(col);
+            if (idx !== STATUSES.length - 1) { const hr = document.createElement("hr"); hr.className = "kb-row-split"; columnsEl.appendChild(hr); }
+          });
+        }
+
+        function loadJobsSelect(jobs) {
+          while (jobFilterEl.options.length > 1) jobFilterEl.remove(1);
+          (jobs || []).forEach(j => { const o = document.createElement("option"); o.value = String(j.id); o.textContent = j.title; jobFilterEl.appendChild(o); });
+        }
+
+        function fetchPipeline() {
+          const url = "{% url 'recruiter_pipeline_data' %}?job=" + encodeURIComponent(jobFilterEl.value || "all");
+          fetch(url, { credentials: "same-origin" }).then(r => r.json()).then(data => { loadJobsSelect(data.jobs); buildColumns(data); }).catch(() => {});
+        }
+
+        function updateStatus(appId, statusKey) {
+          const url = "{% url 'update_application_status_ajax' 0 %}".replace("/0/", "/" + appId + "/");
+          fetch(url, { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","X-CSRFToken":getCookie("csrftoken")}, body:"status=" + statusKey }).catch(() => {});
+        }
+
+        jobFilterEl.addEventListener("change", fetchPipeline);
+        fetchPipeline();
+      })();
+    </script>
+
   {% else %}
     <div class="text-muted">No candidates match your search. Try adjusting filters.</div>
   {% endif %}
 </div>
+
+
+<!-- SAVED SEARCHES MODAL -->
+<div class="modal fade" id="savedSearchesModal" tabindex="-1" aria-labelledby="savedSearchesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-bold" id="savedSearchesModalLabel">Saved Searches</h5>
+          <div class="text-muted small">Re-run a search or see new candidate matches since you last checked.</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div id="ssLoading" class="text-center py-4 text-muted">
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+          Loading saved searches…
+        </div>
+        <div id="ssEmpty" style="display:none;" class="text-center py-5 text-muted">
+          <div style="font-size:2rem;">🔍</div>
+          <div class="mt-2">No saved searches yet.</div>
+          <div class="small mt-1">Use "Save Search" on the search form to save a query.</div>
+        </div>
+        <div id="ssList" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function getCsrfToken() {
+  const c = document.cookie.split(";").find(x => x.trim().startsWith("csrftoken="));
+  return c ? decodeURIComponent(c.trim().slice("csrftoken=".length)) : "";
+}
+
+function loadSavedSearches(renderInModal) {
+  return fetch("{% url 'saved_searches_list' %}", { credentials: "same-origin" })
+    .then(r => r.json())
+    .then(data => {
+      const searches = data.searches || [];
+      const badge = document.getElementById("savedSearchesBadge");
+      const totalUnread = searches.reduce((sum, s) => sum + s.unread_notifications, 0);
+      if (totalUnread > 0) {
+        badge.textContent = totalUnread;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
+      if (renderInModal) renderSearchList(searches);
+      return searches;
+    })
+    .catch(() => {});
+}
+
+function renderSearchList(searches) {
+  const loading = document.getElementById("ssLoading");
+  const empty   = document.getElementById("ssEmpty");
+  const list    = document.getElementById("ssList");
+  loading.style.display = "none";
+  if (!searches.length) {
+    empty.style.display = "";
+    list.style.display  = "none";
+    return;
+  }
+  empty.style.display = "none";
+  list.style.display  = "";
+  list.innerHTML = "";
+  searches.forEach(s => {
+    const hasNew = s.unread_notifications > 0;
+    const card = document.createElement("div");
+    card.className = "border rounded-3 p-3 mb-3 position-relative";
+    if (hasNew) card.style.borderColor = "var(--brand)";
+    const pills = [];
+    if (s.skills)   pills.push(`<span class="badge text-bg-light me-1">Skills: ${escHtml(s.skills)}</span>`);
+    if (s.location) pills.push(`<span class="badge text-bg-light me-1">Location: ${escHtml(s.location)}</span>`);
+    if (s.projects) pills.push(`<span class="badge text-bg-light me-1">Projects: ${escHtml(s.projects)}</span>`);
+    if (!pills.length) pills.push('<span class="text-muted small">No filters set</span>');
+    const newAlert = hasNew
+      ? `<div class="d-flex align-items-center gap-2 mt-2 mb-1">
+           <span class="badge bg-danger rounded-pill">${s.unread_notifications} new match${s.unread_notifications > 1 ? 'es' : ''}</span>
+           <button class="btn btn-link btn-sm p-0 text-muted" style="font-size:.75rem;"
+                   onclick="markRead(${s.id}, this)">Mark as read</button>
+         </div>`
+      : "";
+    card.innerHTML = `
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div style="flex:1; min-width:0;">
+          <div class="fw-semibold mb-1">${escHtml(s.name)}</div>
+          <div class="mb-1">${pills.join("")}</div>
+          ${newAlert}
+          <div class="text-muted" style="font-size:.75rem;">
+            Saved ${escHtml(s.created_at)} &nbsp;·&nbsp; ${s.current_match_count} current match${s.current_match_count !== 1 ? 'es' : ''}
+          </div>
+        </div>
+        <div class="d-flex flex-column gap-1 align-items-end flex-shrink-0">
+          <a href="{% url 'recruiter_candidate_search' %}?skills=${encodeParam(s.skills)}&location=${encodeParam(s.location)}&projects=${encodeParam(s.projects)}"
+             class="btn btn-primary btn-sm">
+            Run Search
+          </a>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteSavedSearch(${s.id}, this)">
+            Delete
+          </button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function openSavedSearchesModal() {
+  document.getElementById("ssLoading").style.display = "";
+  document.getElementById("ssEmpty").style.display   = "none";
+  document.getElementById("ssList").style.display    = "none";
+  document.getElementById("ssList").innerHTML        = "";
+  const modal = new bootstrap.Modal(document.getElementById("savedSearchesModal"));
+  modal.show();
+  loadSavedSearches(true);
+}
+
+function deleteSavedSearch(searchId, btn) {
+  if (!confirm("Delete this saved search?")) return;
+  btn.disabled = true;
+  fetch(`/recruiter/saved-searches/${searchId}/delete/`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "X-CSRFToken": getCsrfToken() }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      btn.closest(".border.rounded-3").remove();
+      loadSavedSearches(false);
+      if (!document.querySelectorAll("#ssList .border.rounded-3").length) {
+        document.getElementById("ssEmpty").style.display = "";
+        document.getElementById("ssList").style.display  = "none";
+      }
+    }
+  })
+  .catch(() => { btn.disabled = false; });
+}
+
+function markRead(searchId, btn) {
+  btn.disabled = true;
+  fetch(`/recruiter/saved-searches/${searchId}/mark-read/`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "X-CSRFToken": getCsrfToken() }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      btn.closest(".d-flex.align-items-center").remove();
+      const card = btn.closest(".border.rounded-3");
+      if (card) card.style.borderColor = "";
+      loadSavedSearches(false);
+    }
+  })
+  .catch(() => { btn.disabled = false; });
+}
+
+function escHtml(str) {
+  if (!str) return "";
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function encodeParam(val) {
+  return encodeURIComponent(val || "");
+}
+
+document.addEventListener("DOMContentLoaded", () => loadSavedSearches(false));
+</script>
+
 {% endblock %}
-
-
