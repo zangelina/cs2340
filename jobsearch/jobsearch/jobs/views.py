@@ -1097,3 +1097,77 @@ def candidate_cluster_map(request):
     return render(request, "jobs/candidate_cluster_map.html", {
         "candidates_json": json.dumps(candidates)
     })
+
+    # ── Saved Searches list + delete + mark-read ─────────────
+
+#User Story 15
+
+@login_required
+def saved_searches_list(request):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    def filter_profiles(skills_text, location_text, projects_text):
+        qs = JobSeekerProfile.objects.filter(is_public=True).select_related("user")
+        if skills_text:
+            q = Q()
+            for term in skills_text.split(","):
+                term = term.strip()
+                if term:
+                    q |= Q(skills__icontains=term)
+            qs = qs.filter(q, show_skills=True)
+        if location_text:
+            qs = qs.filter(location__icontains=location_text, show_location=True)
+        if projects_text:
+            qs = qs.filter(projects__icontains=projects_text, show_projects=True)
+        return qs
+
+    searches = SavedCandidateSearch.objects.filter(
+        recruiter=request.user
+    ).order_by("-created_at")
+
+    data = []
+    for s in searches:
+        unread = CandidateMatchNotification.objects.filter(
+            saved_search=s, is_read=False
+        ).count()
+        current_count = filter_profiles(
+            s.skills or "", s.location or "", s.projects or ""
+        ).count()
+        data.append({
+            "id": s.id,
+            "name": s.name,
+            "skills": s.skills,
+            "location": s.location,
+            "projects": s.projects,
+            "created_at": s.created_at.strftime("%b %d, %Y"),
+            "unread_notifications": unread,
+            "current_match_count": current_count,
+        })
+
+    return JsonResponse({"searches": data})
+
+
+@login_required
+def delete_saved_search(request, search_id):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    s = get_object_or_404(SavedCandidateSearch, pk=search_id, recruiter=request.user)
+    s.delete()
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def mark_search_notifications_read(request, search_id):
+    if not request.user.is_recruiter():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    CandidateMatchNotification.objects.filter(
+        recruiter=request.user,
+        saved_search_id=search_id,
+        is_read=False
+    ).update(is_read=True)
+    return JsonResponse({"ok": True})
