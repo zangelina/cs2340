@@ -5,11 +5,10 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
-        <span style="font-size:1.2rem;">🏆</span>
         <div>
           <div class="fw-bold" style="font-size:.92rem;">Your Milestones</div>
           {% if ms.unlocked %}
-          <div class="small" style="color:#10b981;font-weight:700;">🎉 Milestone unlocked! Custom background available.</div>
+          <div class="small" style="color:#10b981;font-weight:700;">Milestone unlocked! Custom background available.</div>
           {% else %}
           <div class="small text-muted">Hit a goal to unlock a custom site background</div>
           {% endif %}
@@ -27,7 +26,7 @@
       {% if role == "seeker" %}
       <div class="milestone-track">
         <div class="milestone-track-label">
-          <span>📨 Applications</span>
+          <span>Applications</span>
           <span class="milestone-fraction">{{ ms.apps_count }} / {{ ms.goal_apps }}</span>
         </div>
         <div class="milestone-progress-bg">
@@ -37,7 +36,7 @@
   
       <div class="milestone-track">
         <div class="milestone-track-label">
-          <span>🎉 Offers received</span>
+          <span>Offers received</span>
           <span class="milestone-fraction">{{ ms.offers_count }} / {{ ms.goal_offers }}</span>
         </div>
         <div class="milestone-progress-bg">
@@ -48,7 +47,7 @@
       {% else %}
       <div class="milestone-track">
         <div class="milestone-track-label">
-          <span>👀 Applications reviewed</span>
+          <span>Applications reviewed</span>
           <span class="milestone-fraction">{{ ms.reviewed_count }} / {{ ms.goal_reviews }}</span>
         </div>
         <div class="milestone-progress-bg">
@@ -58,7 +57,7 @@
   
       <div class="milestone-track">
         <div class="milestone-track-label">
-          <span>🎉 Offers sent</span>
+          <span>Offers sent</span>
           <span class="milestone-fraction">{{ ms.offers_sent }} / {{ ms.goal_offers }}</span>
         </div>
         <div class="milestone-progress-bg">
@@ -68,7 +67,7 @@
   
       <div class="milestone-track">
         <div class="milestone-track-label">
-          <span>✅ Jobs filled</span>
+          <span>Jobs filled</span>
           <span class="milestone-fraction">{{ ms.filled_count }} / {{ ms.goal_filled }}</span>
         </div>
         <div class="milestone-progress-bg">
@@ -132,7 +131,7 @@
   
         {% if ms.unlocked %}
         <div class="mb-3">
-          <label class="form-label fw-semibold small">🎨 Custom background image
+          <label class="form-label fw-semibold small">Custom background image
             <span class="ms-1 text-success fw-bold">— Unlocked!</span>
           </label>
           <input type="file" name="background_image" class="form-control" accept="image/*"
@@ -158,7 +157,7 @@
         </div>
         {% else %}
         <div class="alert mb-3" style="background:var(--brand-light);border:1px solid var(--brand);border-radius:10px;font-size:.82rem;">
-          🔒 Hit any milestone to unlock custom background upload.
+          Hit any milestone to unlock custom background upload.
         </div>
         {% endif %}
   
